@@ -129,9 +129,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="amperageCalculator.cpp" />
+    <ClCompile Include="circuit.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="amperageCalculator.h" />
+    <ClInclude Include="circuit.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
