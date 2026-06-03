@@ -130,10 +130,16 @@
   <ItemGroup>
     <ClCompile Include="amperageCalculator.cpp" />
     <ClCompile Include="circuit.cpp" />
+    <ClCompile Include="circuitBranch.cpp" />
+    <ClCompile Include="circuitError.cpp" />
+    <ClCompile Include="circuitNode.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="amperageCalculator.h" />
     <ClInclude Include="circuit.h" />
+    <ClInclude Include="circuitBranch.h" />
+    <ClInclude Include="circuitError.h" />
+    <ClInclude Include="circuitNode.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
