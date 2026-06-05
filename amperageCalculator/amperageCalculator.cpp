@@ -11,19 +11,48 @@
  */
 
 #include <iostream>
+#include <string>
+#include "circuit.h"
 
- /**
-  * \brief Главная функция программы.
-  *
-  * Ожидает два аргумента командной строки:
-  * 1. Путь к входному файлу с описанием электрической цепи.
-  * 2. Путь к выходному файлу для записи результатов.
-  *
-  * \param [in] argc Количество аргументов командной строки.
-  * \param [in] argv Массив аргументов командной строки.
-  * \return 0 — программа завершилась успешно; 1 — произошла ошибка.
-  */
-int main(int argc, char* argv[])
-{
-	return 0;
+using namespace std;
+
+int main(int argc, char* argv[]) {
+    setlocale(LC_ALL, "Russian");
+
+    string inputFile;
+    string outputFile;
+
+    // Если передано корректное количество аргументов
+    if (argc >= 3) {
+        inputFile = argv[1];
+        outputFile = argv[2];
+    }
+    else {
+        cout << "Введите имя входного файла (input.txt): ";
+        getline(cin, inputFile);
+        cout << "Введите имя выходного файла (output.txt): ";
+        getline(cin, outputFile);
+    }
+
+    // Создать объект Circuit
+    Circuit circuit;
+
+    // Выполнить парсинг входного файла
+    if (!circuit.parseFromFile(inputFile)) {
+        cout << "Ошибка: " << circuit.getError().getMessage() << endl;
+        return 1;
+    }
+    // Выполнить расчет цепи
+    if (!circuit.calculate()) {
+        cout << "Ошибка: " << circuit.getError().getMessage() << endl;
+        return 1;
+    }
+    // Записать результат в выходной файл
+    if (!circuit.writeToFile(outputFile)) {
+        cout << "Ошибка: " << circuit.getError().getMessage() << endl;
+        return 1;
+    }
+    cout << "Результат записан в файл: " << outputFile << endl;
+
+    return 0;
 }
