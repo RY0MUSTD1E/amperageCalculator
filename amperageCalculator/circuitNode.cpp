@@ -33,3 +33,7 @@ CircuitNode::CircuitNode(const std::string& name, NodeType type, double value)
         resistance = std::complex<double>(value, 0.0);
     }
 }
+
+std::complex<double> CircuitNode::getResistance() const {
+    return resistance;
+}

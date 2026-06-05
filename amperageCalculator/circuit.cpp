@@ -8,6 +8,7 @@
 
 #include "circuit.h"
 #include "circuitError.h"
+#include "circuitNode.h"
 #include <string>
 
 using namespace std;
@@ -22,6 +23,11 @@ Circuit::Circuit() {
  * \brief Деструктор.
  */
 Circuit::~Circuit() { 
+}
+
+CircuitNode* Circuit::getNodeByName(const string& name) const {
+    auto it = nameToNode.find(name);
+    return (it != nameToNode.end()) ? it->second : nullptr;
 }
 
 bool Circuit::parseFromFile(const string& filename) {

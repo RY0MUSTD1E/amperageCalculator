@@ -9,7 +9,11 @@
 #pragma once
 
 #include "circuitError.h"
+#include "circuitNode.h"
 #include <string>
+#include <vector>
+#include <map>
+#include <unordered_map>
 
 using namespace std;
 
@@ -69,9 +73,30 @@ public:
     const Error& getError() const {
         return error;
     }
-    
+
+    // Для тестов
+    /**
+     * \brief Находит узел цепи по его имени.
+     * \param[in] name Имя искомого узла.
+     * \return Указатель на найденный узел CircuitNode; nullptr, если узел не найден.
+     */
+    CircuitNode* getNodeByName(const string& name) const;
+    size_t getNodeCount() const {
+        return nodes.size();
+    }
+    size_t getEdgeCount() const {
+        return edges.size();
+    }
+
 private:
 
+    // Поля класса
+    double frequency;
+    double sourceVoltage;
+    double sourcePhase;
+    vector<CircuitNode*> nodes;
+    vector<pair<string, string>> edges;
     Error error;
 
+    unordered_map<string, CircuitNode*> nameToNode;
 };
