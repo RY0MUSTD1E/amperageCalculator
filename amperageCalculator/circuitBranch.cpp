@@ -21,3 +21,18 @@ CircuitBranch::~CircuitBranch()
     previousBranches.clear();
     nextBranches.clear();
 }
+
+const std::vector<CircuitNode*>& CircuitBranch::getNodes() const
+{
+    return nodes;
+}
+
+const std::vector<CircuitBranch*>& CircuitBranch::getPrevBranches() const
+{
+    return previousBranches;
+}
+
+const std::vector<CircuitBranch*>& CircuitBranch::getNextBranches() const
+{
+    return nextBranches;
+}

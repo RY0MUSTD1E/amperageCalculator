@@ -10,6 +10,7 @@
 
 #include "circuitError.h"
 #include "circuitNode.h"
+#include "circuitBranch.h"
 #include <string>
 #include <vector>
 #include <map>
@@ -73,6 +74,9 @@ public:
     const Error& getError() const {
         return error;
     }
+    const vector<CircuitBranch*>& getBranches() const {
+        return branches;
+    }
 
     // Для тестов
     /**
@@ -96,6 +100,7 @@ private:
     double sourcePhase;
     vector<CircuitNode*> nodes;
     vector<pair<string, string>> edges;
+    vector<CircuitBranch*> branches;
     Error error;
 
     unordered_map<string, CircuitNode*> nameToNode;

@@ -34,6 +34,10 @@ CircuitNode::CircuitNode(const std::string& name, NodeType type, double value)
     }
 }
 
+std::string CircuitNode::getName() const {
+    return name;
+}
+
 std::complex<double> CircuitNode::getResistance() const {
     return resistance;
 }

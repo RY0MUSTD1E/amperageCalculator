@@ -31,6 +31,23 @@ public:
      */
     ~CircuitBranch();
 
+    /**
+     * \brief Возвращает константную ссылку на вектор узлов ветви.
+     * \return Вектор указателей на узлы.
+     */
+    const std::vector<CircuitNode*>& getNodes() const;
+
+    /**
+     * \brief Возвращает список предыдущих ветвей.
+     * \return Константная ссылка на вектор предыдущих ветвей.
+     */
+    const std::vector<CircuitBranch*>& getPrevBranches() const;
+
+    /**
+     * \brief Возвращает список следующих ветвей.
+     * \return Константная ссылка на вектор следующих ветвей.
+     */
+    const std::vector<CircuitBranch*>& getNextBranches() const;
 
 private:
     std::complex<double> amperage;               ///< Комплексный ток ветви

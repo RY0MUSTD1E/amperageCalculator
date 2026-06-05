@@ -46,6 +46,12 @@ public:
     CircuitNode(const std::string& name, NodeType type, double value);
 
     /**
+     * \brief Возвращает имя элемента.
+     * \return Имя элемента.
+     */
+    std::string getName() const;
+
+    /**
      * \brief Возвращает комплексное сопротивление.
      * \return Комплексное сопротивление.
      */
