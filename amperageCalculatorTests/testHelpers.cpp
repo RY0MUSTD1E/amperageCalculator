@@ -27,4 +27,6 @@ namespace TestHelpers
     void VerifyConnections(CircuitBranch* branch, const vector<int>& expectedNext, const vector<int>& expectedPrev, const vector<CircuitBranch*>& allBranches) {
         
     }
+    void VerifyAmperage(Circuit* circuit, const string& nodeName, double expectedReal, double expectedImag, double tolerance) {
+    }
 }

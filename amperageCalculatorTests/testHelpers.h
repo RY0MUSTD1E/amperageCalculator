@@ -42,4 +42,14 @@ namespace TestHelpers
      * \param[in] allBranches Вектор всех ветвей цепи.
      */
     void VerifyConnections(CircuitBranch* branch, const std::vector<int>& expectedNext, const std::vector<int>& expectedPrev, const std::vector<CircuitBranch*>& allBranches);
+
+    /**
+     * \brief Проверяет рассчитанное значение тока в компоненте с заданной точностью.
+     * \param[in] circuit Указатель на объект Circuit.
+     * \param[in] nodeName Имя компонента.
+     * \param[in] expectedReal Ожидаемая действительная часть.
+     * \param[in] expectedImag Ожидаемая мнимая часть.
+     * \param[in] tolerance Допустимая погрешность.
+     */
+    void VerifyAmperage(Circuit* circuit, const string& nodeName, double expectedReal, double expectedImag, double tolerance = 1e-4);
 }
