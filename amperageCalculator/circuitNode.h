@@ -45,6 +45,64 @@ public:
      */
     CircuitNode(const std::string& name, NodeType type, double value);
 
+    //Сеттеры
+
+    /**
+     * \brief Устанавливает имя элемента.
+     * \param[in] n Новое имя.
+     */
+    void setName(const std::string& n);
+
+    /**
+     * \brief Устанавливает тип элемента.
+     * \param[in] t Новый тип.
+     */
+    void setType(NodeType t);
+
+    /**
+     * \brief Устанавливает комплексный ток.
+     * \param[in] a Комплексное значение тока.
+     */
+    void setAmperage(std::complex<double> a);
+
+    /**
+     * \brief Устанавливает комплексное сопротивление.
+     * \param[in] r Комплексное значение сопротивления.
+     */
+    void setResistance(std::complex<double> r);
+
+    /**
+     * \brief Устанавливает напряжение.
+     * \param[in] v Значение напряжения.
+     */
+    void setVoltage(double v);
+
+    /**
+     * \brief Устанавливает частоту.
+     * \param[in] f Значение частоты.
+     */
+    void setFrequency(double f);
+
+    /**
+     * \brief Устанавливает фазу.
+     * \param[in] p Значение фазы.
+     */
+    void setPhase(double p);
+
+    /**
+     * \brief Устанавливает номинальное значение.
+     * \param[in] v Номинальное значение.
+     */
+    void setValue(double v);
+
+    /**
+     * \brief Устанавливает оригинальную строку label.
+     * \param[in] l Строка оригинального label.
+     */
+    void setOriginalLabel(const std::string& l);
+
+    // Геттеры
+
     /**
      * \brief Возвращает имя элемента.
      * \return Имя элемента.
@@ -52,10 +110,52 @@ public:
     std::string getName() const;
 
     /**
+     * \brief Возвращает тип элемента.
+     * \return Тип элемента.
+     */
+    NodeType getType() const;
+
+    /**
+     * \brief Возвращает комплексный ток.
+     * \return Комплексный ток.
+     */
+    std::complex<double> getAmperage() const;
+
+    /**
      * \brief Возвращает комплексное сопротивление.
      * \return Комплексное сопротивление.
      */
     std::complex<double> getResistance() const;
+
+    /**
+     * \brief Возвращает напряжение.
+     * \return Напряжение.
+     */
+    double getVoltage() const;
+
+    /**
+     * \brief Возвращает частоту.
+     * \return Частота.
+     */
+    double getFrequency() const;
+
+    /**
+     * \brief Возвращает фазу.
+     * \return Фаза.
+     */
+    double getPhase() const;
+
+    /**
+     * \brief Возвращает номинальное значение.
+     * \return Номинальное значение.
+     */
+    double getValue() const;
+
+    /**
+     * \brief Возвращает оригинальную строку label.
+     * \return Оригинальный label.
+     */
+    std::string getOriginalLabel() const;
 
 private:
     std::string name;                       ///< Имя элемента
