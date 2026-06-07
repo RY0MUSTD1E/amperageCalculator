@@ -110,6 +110,22 @@ public:
      */
     bool parseLabel(const string& labelContent, ParamsOfNode& params, int lineNum);
 
+    /**
+     * \brief Парсит содержимое label для элемента типа SOURCE.
+     * \param[in] content Строка содержимого label.
+     * \param[out] params Структура для записи распарсенных параметров.
+     * \return true, если парсинг успешен; false в противном случае.
+     */
+    bool parseSourceLabel(const string& content, ParamsOfNode& params);
+
+    /**
+     * \brief Парсит содержимое label для пассивного элемента (R, L, C).
+     * \param content Строка содержимого label (например, "R=100", "L=0.1", "C=100e-6").
+     * \param[out] params Структура ParamsOfNode для записи распарсенных параметров.
+     * \return true, если парсинг успешен; false в противном случае.
+     */
+    bool parseElementLabel(const string& content, ParamsOfNode& params);
+
     // Для тестов
     /**
      * \brief Находит узел цепи по его имени.

@@ -38,7 +38,14 @@ CircuitNode* Circuit::getNodeByName(const string& name) const {
 }
 
 string Circuit::trim(const string& s) {
-    return "";
+    // Найти первый символ, не являющийся пробельным
+    size_t start = s.find_first_not_of(" \t\r\n");
+    if (start == string::npos) {
+        return "";
+    }
+    // Найти последний непробельный символ и вернуть подстроку
+    size_t end = s.find_last_not_of(" \t\r\n");
+    return s.substr(start, end - start + 1);
 }
 
 bool Circuit::parseFromFile(const string& filename) {
@@ -264,12 +271,69 @@ bool Circuit::writeToFile(const string& filename) {
     return false;
 }
 
+bool Circuit::parseLabel(const string& labelContent, ParamsOfNode& params, int lineNum) {
+    if (labelContent.empty()) {
+        error.setError(ErrorType::EmptyLabel, params.name, lineNum);
+        return false;
+    }
 
-bool Circuit::isValidName(const string& name) {
+    params.originalLabel = labelContent;
+    string upperContent = labelContent;
+    transform(upperContent.begin(), upperContent.end(), upperContent.begin(), ::toupper);
+
+    // Проверить, является ли элемент источником (SOURCE)
+    if (upperContent.find("SOURCE") == 0) {
+        if (!parseSourceLabel(labelContent, params)) {
+            error.setError(ErrorType::IncompleteSource, params.name, lineNum);
+            return false;
+        }
+    }
+    else {
+        // Для пассивных элементов R, L, C отдельный парсер
+        if (!parseElementLabel(labelContent, params)) {
+            size_t eqPos = labelContent.find('=');
+            if (eqPos == string::npos) {
+                error.setError(ErrorType::MissingComponentValue, params.name, lineNum);
+            }
+            else {
+                string typeStr = trim(labelContent.substr(0, eqPos));
+                // Различия неизвестного типа компонента и ошибки формата числа
+                if (typeStr == "R" || typeStr == "L" || typeStr == "C" ||
+                    typeStr == "r" || typeStr == "l" || typeStr == "c") {
+                    error.setError(ErrorType::InvalidNumberFormat, params.name, lineNum);
+                }
+                else {
+                    error.setError(ErrorType::UnknownComponentType, params.name, lineNum);
+                }
+            }
+            return false;
+        }
+    }
     return true;
 }
 
-
-bool Circuit::parseLabel(const string& labelContent, ParamsOfNode& params, int lineNum) {
+bool Circuit::isValidName(const string& name) {
+    // Имя не должно быть пустым и не длиннее 7 символов
+    if (name.empty() || name.length() > 7) {
+        return false;
+    }
+    // Первый символ должен быть буквой
+    if (!isalpha((unsigned char)name[0])) {
+        return false;
+    }
+    // Все остальные символы только буквы или цифры
+    for (char c : name) {
+        if (!isalnum((unsigned char)c)) {
+            return false;
+        }
+    }
     return true;
+}
+
+bool Circuit::parseSourceLabel(const string& content, ParamsOfNode& params) {
+    return false;
+}
+
+bool Circuit::parseElementLabel(const string& content, ParamsOfNode& params) {
+    return false;
 }
