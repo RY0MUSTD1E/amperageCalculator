@@ -248,7 +248,59 @@ bool Circuit::parseFromFile(const string& filename) {
 }
 
 bool Circuit::validate() {
-    return false; 
+    // Проверить количество элементов
+    if (nodes.size() > 100) {
+        error.setError(ErrorType::TooManyElements);
+        return false;
+    }
+
+    // Проверить количество связей
+    if (edges.size() > 100) {
+        error.setError(ErrorType::TooManyEdges);
+        return false;
+    }
+
+    // Проверить имена элементов
+    if (!validateNames()) {
+        return false;
+    }
+
+    // Проверить уникальность имён
+    if (!validateUniqueness()) {
+        return false;
+    }
+
+    // Проверить наличие источника ЭДС и корректность значений источника
+    if (!validateSource()) {
+        return false;
+    }
+
+    // Проверить корректность значений R, L, C
+    if (!validateValues()) {
+        return false;
+    }
+
+    // Проверить, что все компоненты из связей существуют, отсутствуют соединений с самим собой и нет дублирующихся связей
+    if (!validateEdges()) {
+        return false;
+    }
+
+    // Проверить связность графа
+    if (!validateConnectivity()) {
+        return false;
+    }
+
+    // Проверить замкнутость цепи и наличие пути от источника ко всем узлам и обратно
+    if (!validateClosure()) {
+        return false;
+    }
+
+    // Проверить количество параллельных элементов
+    if (!validateParallelCount()) {
+        return false;
+    }
+
+    return true;
 }
 
 bool Circuit::calculateImpedances() {
@@ -270,6 +322,8 @@ bool Circuit::calculate() {
 bool Circuit::writeToFile(const string& filename) {
     return false;
 }
+
+// Вспомогательные методы парсинга
 
 bool Circuit::parseLabel(const string& labelContent, ParamsOfNode& params, int lineNum) {
     if (labelContent.empty()) {
@@ -450,5 +504,39 @@ bool Circuit::validateExponentialFormat(const string& s) {
             return false;
         }
     }
+    return true;
+}
+
+// Вспомогательные методы валидации
+
+bool Circuit::validateNames() {
+    return true;
+}
+
+bool Circuit::validateUniqueness() {
+    return true;
+}
+
+bool Circuit::validateSource() {
+    return true;
+}
+
+bool Circuit::validateValues() {
+    return true;
+}
+
+bool Circuit::validateEdges() {
+    return true;
+}
+
+bool Circuit::validateConnectivity() {
+    return true;
+}
+
+bool Circuit::validateClosure() {
+    return true;
+}
+
+bool Circuit::validateParallelCount() {
     return true;
 }
