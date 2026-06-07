@@ -126,6 +126,14 @@ public:
      */
     bool parseElementLabel(const string& content, ParamsOfNode& params);
 
+    /**
+     * \brief Преобразует строку в число с плавающей точкой.
+     * \param[in] s Исходная строка.
+     * \param[out] value Переменная для записи результата.
+     * \return true, если строка содержит корректное число; false в противном случае.
+     */
+    bool parseDouble(const string& s, double& value);
+
     // Для тестов
     /**
      * \brief Находит узел цепи по его имени.

@@ -331,9 +331,75 @@ bool Circuit::isValidName(const string& name) {
 }
 
 bool Circuit::parseSourceLabel(const string& content, ParamsOfNode& params) {
-    return false;
+    // Регулярные выражения для поиска frequency, voltage и phase
+    regex freqRegex(R"(frequency\s*=\s*([+-]?\d*\.?\d+(?:[eE][+-]?\d+)?))", regex::icase);
+    regex voltRegex(R"(voltage\s*=\s*([+-]?\d*\.?\d+(?:[eE][+-]?\d+)?))", regex::icase);
+    regex phaseRegex(R"(phase\s*=\s*([+-]?\d+))", regex::icase);
+    smatch match;
+
+    // Извлечь frequency
+    if (!regex_search(content, match, freqRegex)) {
+        return false;
+    }
+    if (!parseDouble(match[1].str(), params.frequency)) {
+        return false;
+    }
+
+    // Извлечь voltage
+    if (!regex_search(content, match, voltRegex)) {
+        return false;
+    }
+    if (!parseDouble(match[1].str(), params.voltage)) {
+        return false;
+    }
+
+    // Извлечь phase
+    if (!regex_search(content, match, phaseRegex)) {
+        return false;
+    }
+    double phase;
+    if (!parseDouble(match[1].str(), phase)) {
+        return false;
+    }
+    params.phase = phase;
+
+    params.type = NodeType::Source;
+    return true;
 }
 
 bool Circuit::parseElementLabel(const string& content, ParamsOfNode& params) {
+    // Искать знак равенства, разделяющий тип и значение
+    size_t eqPos = content.find('=');
+    if (eqPos == string::npos) {
+        return false;
+    }
+
+    // Разделить строку на тип и значение
+    string typeStr = trim(content.substr(0, eqPos));
+    string valueStr = trim(content.substr(eqPos + 1));
+
+    if (typeStr.empty() || valueStr.empty()) {
+        return false;
+    }
+
+    // Определить тип компонента по первому символу
+    if (typeStr == "R" || typeStr == "r") {
+        params.type = NodeType::Resistor;
+    }
+    else if (typeStr == "L" || typeStr == "l") {
+        params.type = NodeType::Coil;
+    }
+    else if (typeStr == "C" || typeStr == "c") {
+        params.type = NodeType::Capacitor;
+    }
+    else {
+        return false;
+    }
+
+    // Преобразовать строковое значение в число с плавающей точкой
+    return parseDouble(valueStr, params.nominal);
+}
+
+bool Circuit::parseDouble(const string& s, double& value) {
     return false;
 }
