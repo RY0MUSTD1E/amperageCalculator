@@ -401,5 +401,54 @@ bool Circuit::parseElementLabel(const string& content, ParamsOfNode& params) {
 }
 
 bool Circuit::parseDouble(const string& s, double& value) {
+    if (s.empty()) {
+        return false;
+    }
+    string str = s;
+    // Удалить все пробельные символы
+    str.erase(remove_if(str.begin(), str.end(), ::isspace), str.end());
+
+    // Проверить экспоненциальный формат (не более 2 знаков после запятой в мантиссе)
+    if (!validateExponentialFormat(str)) {
+        return false;
+    }
+
+    regex numRegex(R"([+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?)");
+    if (regex_match(str, numRegex)) {
+        try {
+            istringstream iss(str);
+            // Локаль "C" для гарантии, что точка это десятичный разделитель
+            iss.imbue(locale("C"));
+            if (!(iss >> value)) {
+                return false;
+            }
+            // Проверить, что результат конечное число 
+            return isfinite(value);
+        }
+        catch (...) {
+            return false;
+        }
+    }
     return false;
+}
+
+bool Circuit::validateExponentialFormat(const string& s) {
+    // Искать экспоненциальную форму
+    size_t ePos = s.find_first_of("eE");
+    if (ePos == string::npos) {
+        return true;
+    }
+    // Взять мантиссу (часть до e/E)
+    string mantissa = s.substr(0, ePos);
+
+    // Искать десятичную точку
+    size_t dotPos = mantissa.find('.');
+    if (dotPos != string::npos) {
+        // Количество знаков после запятой не более двух
+        int fractionalDigits = mantissa.length() - dotPos - 1;
+        if (fractionalDigits > 2) {
+            return false;
+        }
+    }
+    return true;
 }

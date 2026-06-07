@@ -134,6 +134,13 @@ public:
      */
     bool parseDouble(const string& s, double& value);
 
+    /**
+     * \brief Проверяет корректность экспоненциального формата числа.
+     * \param[in] s Строка, предположительно содержащая число в экспоненциальной форме.
+     * \return true, если формат корректен; false в противном случае.
+     */
+    bool validateExponentialFormat(const string& s);
+
     // Для тестов
     /**
      * \brief Находит узел цепи по его имени.
