@@ -510,18 +510,94 @@ bool Circuit::validateExponentialFormat(const string& s) {
 // Вспомогательные методы валидации
 
 bool Circuit::validateNames() {
+    // Пройти по всем узлам цепи
+    for (auto* node : nodes) {
+        // Проверить корректность имени каждого узла
+        if (!isValidName(node->getName())) {
+            error.setError(ErrorType::InvalidComponentName, node->getName());
+            return false;
+        }
+    }
     return true;
 }
 
 bool Circuit::validateUniqueness() {
+    // Создать множество для хранения уже встреченных имён
+    unordered_set<string> usedNames;
+
+    // Пройти по всем узлам цепи
+    for (auto* node : nodes) {
+        // Проверить, не встречалось ли имя ранее
+        if (usedNames.find(node->getName()) != usedNames.end()) {
+            error.setError(ErrorType::DuplicateComponent, node->getName());
+            return false;
+        }
+        // Добавить имя в множество обработанных
+        usedNames.insert(node->getName());
+    }
     return true;
 }
 
 bool Circuit::validateSource() {
+    int sourceCount = 0;
+    CircuitNode* sourceNode = nullptr;
+
+    // Пройти по всем узлам цепи
+    for (auto* node : nodes) {
+        // Найти узлы с типом Source
+        if (node->getType() == NodeType::Source) {
+            sourceCount++;
+            sourceNode = node;
+        }
+    }
+
+    // Проверить наличие источника
+    if (sourceCount == 0) {
+        error.setError(ErrorType::MissingSource);
+        return false;
+    }
+
+    // Проверить, что источник только один
+    if (sourceCount > 1) {
+        error.setError(ErrorType::MultipleSources);
+        return false;
+    }
+
+    // Проверить корректность частоты (должна быть положительной)
+    if (sourceNode->getFrequency() <= 0) {
+        error.setError(ErrorType::ValueOutOfRange, sourceNode->getName());
+        return false;
+    }
+
+    // Проверить корректность напряжения
+    if (sourceNode->getVoltage() <= 0) {
+        error.setError(ErrorType::ValueOutOfRange, sourceNode->getName());
+        return false;
+    }
+
+    // Проверить диапазон фазы
+    if (sourceNode->getPhase() < 0 || sourceNode->getPhase() > 360) {
+        error.setError(ErrorType::PhaseOutOfRange, sourceNode->getName());
+        return false;
+    }
+
     return true;
 }
 
 bool Circuit::validateValues() {
+    // Пройти по всем узлам цепи
+    for (auto* node : nodes) {
+        // Пропустить источник (у него нет номинального значения)
+        if (node->getType() == NodeType::Source) {
+            continue;
+        }
+
+        // Проверить, что номинальное значение положительное
+        if (node->getValue() <= 0) {
+            error.setError(ErrorType::ValueOutOfRange, node->getName());
+            return false;
+        }
+    }
     return true;
 }
 
