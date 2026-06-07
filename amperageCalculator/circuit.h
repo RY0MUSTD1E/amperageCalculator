@@ -23,7 +23,15 @@ using namespace std;
    */
 class Circuit {
 public:
+
+    /**
+     * \brief Конструктор по умолчанию.
+     */
     Circuit();
+
+    /**
+     * \brief Деструктор.
+     */
     ~Circuit();
 
     // Основные методы
@@ -78,6 +86,30 @@ public:
         return branches;
     }
 
+    // Вспомогательные методы парсинга
+   /**
+    * \brief Удаляет пробельные символы в начале и конце строки.
+    * \param[in] s Исходная строка.
+    * \return Строка без начальных и конечных пробелов, табуляций, перевода строки.
+    */
+    string trim(const string& s);
+
+    /**
+     * \brief Проверяет корректность имени компонента.
+     * \param[in] name Имя компонента для проверки.
+     * \return true, если имя корректно; false в противном случае.
+     */
+    bool isValidName(const string& name);
+
+    /**
+     * \brief Определяет тип элемента по содержимому label и вызывает соответствующий парсер.
+     * \param[in] labelContent Строка содержимого label.
+     * \param[out] params Структура ParamsOfNode для записи распарсенных параметров.
+     * \param[in] lineNum Номер строки в исходном файле (для сообщений об ошибках).
+     * \return true, если парсинг успешен; false в противном случае.
+     */
+    bool parseLabel(const string& labelContent, ParamsOfNode& params, int lineNum);
+
     // Для тестов
     /**
      * \brief Находит узел цепи по его имени.
@@ -104,4 +136,6 @@ private:
     Error error;
 
     unordered_map<string, CircuitNode*> nameToNode;
+    unordered_map<string, size_t> nameToIndex;
+    vector<string> nodeDefinitions;
 };

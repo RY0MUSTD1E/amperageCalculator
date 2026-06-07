@@ -24,6 +24,35 @@ enum class NodeType {
 };
 
 /**
+ * \struct ParamsOfNode
+ * \brief Вспомогательная структура для хранения распарсенных параметров элемента.
+ *
+ * Используется при парсинге DOT-файла для временного хранения данных
+ * перед созданием объектов CircuitNode.
+ */
+struct ParamsOfNode {
+    std::string name;           ///< Имя компонента
+    NodeType type;              ///< Тип компонента
+    double nominal;             ///< Номинальное значение
+    double frequency;           ///< Частота источника (только для Source)
+    double voltage;             ///< Напряжение источника (только для Source)
+    double phase;               ///< Фаза источника (только для Source)
+    std::string originalLabel;  ///< Оригинальная строка label
+
+    /**
+     * \brief Конструктор по умолчанию.
+     */
+    ParamsOfNode()
+        : type(NodeType::Resistor)
+        , nominal(0.0)
+        , frequency(0.0)
+        , voltage(0.0)
+        , phase(0.0)
+    {
+    }
+};
+
+/**
 * \class CircuitNode
 * \brief Класс, представляющий элемент (узел) электрической цепи переменного тока.
 *
