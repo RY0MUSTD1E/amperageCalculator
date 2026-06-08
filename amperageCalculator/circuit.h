@@ -20,6 +20,8 @@
 #include <boost/graph/graphviz.hpp>
 #include <boost/graph/breadth_first_search.hpp>
 
+constexpr long double pi = 3.14159265358979323846;
+
 using namespace std;
 
 /**

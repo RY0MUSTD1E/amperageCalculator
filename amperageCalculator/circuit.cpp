@@ -304,7 +304,42 @@ bool Circuit::validate() {
 }
 
 bool Circuit::calculateImpedances() {
-    return false;
+    // Вычислить угловую частоту
+    double omega = 2.0 * pi * frequency;
+
+    // Для каждого элемента
+    for (auto* node : nodes) {
+        NodeType type = node->getType();
+
+        // Источник - пропускаем
+        if (type == NodeType::Source) {
+            continue;
+        }
+        // Резистор: Z = R + j*0
+        if (type == NodeType::Resistor) {
+            double resistance = node->getValue();
+            node->setResistance(complex<double>(resistance, 0.0));
+        }
+        // Катушка индуктивности: Z = 0 + j*w*L
+        else if (type == NodeType::Coil) {
+            double inductance = node->getValue();
+            double reactance = omega * inductance;
+            node->setResistance(complex<double>(0.0, reactance));
+        }
+        // Конденсатор: Z = 0 - j*(1/(w*C))
+        else if (type == NodeType::Capacitor) {
+            double capacitance = node->getValue();
+
+            // Проверка на ноль
+            if (capacitance == 0.0) {
+                error.setError(ErrorType::ValueOutOfRange, node->getName());
+                return false;
+            }
+            double reactance = 1.0 / (omega * capacitance);
+            node->setResistance(complex<double>(0.0, -reactance));
+        }
+    }
+    return true;
 }
 
 bool Circuit::buildBranches() {
