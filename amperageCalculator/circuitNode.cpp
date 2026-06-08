@@ -109,3 +109,42 @@ double CircuitNode::getValue() const {
 std::string CircuitNode::getOriginalLabel() const {
     return originalLabel;
 }
+
+// Связи
+void CircuitNode::addNextNode(CircuitNode* node) {
+    if (node && std::find(nextNodes.begin(), nextNodes.end(), node) == nextNodes.end()) {
+        nextNodes.push_back(node);
+        node->addPrevNode(this);
+    }
+}
+
+void CircuitNode::addPrevNode(CircuitNode* node) {
+    if (node && std::find(previousNodes.begin(), previousNodes.end(), node) == previousNodes.end()) {
+        previousNodes.push_back(node);
+    }
+}
+
+void CircuitNode::addNextNodeOneWay(CircuitNode* node) {
+    if (node && std::find(nextNodes.begin(), nextNodes.end(), node) == nextNodes.end()) {
+        nextNodes.push_back(node);
+    }
+}
+
+void CircuitNode::addPrevNodeOneWay(CircuitNode* node) {
+    if (node && std::find(previousNodes.begin(), previousNodes.end(), node) == previousNodes.end()) {
+        previousNodes.push_back(node);
+    }
+}
+
+std::vector<CircuitNode*> CircuitNode::getNextNodes() const {
+    return nextNodes;
+}
+
+std::vector<CircuitNode*> CircuitNode::getPrevNodes() const {
+    return previousNodes;
+}
+
+void CircuitNode::clearConnections() {
+    nextNodes.clear();
+    previousNodes.clear();
+}

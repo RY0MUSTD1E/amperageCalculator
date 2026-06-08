@@ -343,7 +343,186 @@ bool Circuit::calculateImpedances() {
 }
 
 bool Circuit::buildBranches() {
-    return false;
+    // Очистить список branches
+    for (auto* branch : branches) delete branch;
+    branches.clear();
+    for (auto* node : nodes) node->clearConnections();
+
+    // Найти узел с типом SOURCE (источник)
+    CircuitNode* sourceNode = nullptr;
+    for (auto* node : nodes) {
+        if (node->getType() == NodeType::Source) {
+            sourceNode = node;
+            break;
+        }
+    }
+    // Если источник не найден
+    if (!sourceNode) {
+        error.setError(ErrorType::MissingSource);
+        return false;
+    }
+
+    // Построить направленные связи между узлами
+    for (const auto& edge : edges) {
+        // Найти узел-источник и узел-приёмник по имени
+        CircuitNode* src = nameToNode[edge.first];
+        CircuitNode* dst = nameToNode[edge.second];
+        if (src && dst) {
+            src->addNextNodeOneWay(dst);
+            dst->addPrevNodeOneWay(src);
+        }
+    }
+    // Выполнить топологическую сортировку узлов от источника (BFS)
+    vector<CircuitNode*> topoOrder;
+    set<CircuitNode*> topoVisited;
+    queue<CircuitNode*> q;
+
+    // Поместить в очередь узел-источник
+    q.push(sourceNode);
+    topoVisited.insert(sourceNode);
+
+    // Пока очередь не пуста
+    while (!q.empty()) {
+        // Извлечь узел из очереди, добавить в топологический порядок
+        CircuitNode* node = q.front();
+        q.pop();
+        topoOrder.push_back(node);
+
+        // Для каждого следующего узла
+        for (auto* next : node->getNextNodes()) {
+            if (topoVisited.find(next) == topoVisited.end()) {
+                // Если все предыдущие узлы уже посещены
+                bool allPrevVisited = true;
+                for (auto* prev : next->getPrevNodes()) {
+                    if (topoVisited.find(prev) == topoVisited.end()) {
+                        allPrevVisited = false;
+                        break;
+                    }
+                }
+                if (allPrevVisited) {
+                    topoVisited.insert(next);
+                    q.push(next);
+                }
+            }
+        }
+        // Если очередь пуста, но есть непосещённые узлы
+        if (q.empty()) {
+            for (auto* n : nodes) {
+                if (topoVisited.find(n) == topoVisited.end()) {
+                    bool allPrevVisited = true;
+                    for (auto* prev : n->getPrevNodes()) {
+                        if (topoVisited.find(prev) == topoVisited.end()) {
+                            allPrevVisited = false;
+                            break;
+                        }
+                    }
+                    if (allPrevVisited) {
+                        // Добавить в очередь
+                        topoVisited.insert(n);
+                        q.push(n);
+                    }
+                }
+            }
+        }
+    }
+
+    // Распределить узлы по ветвям в топологическом порядке
+    map<CircuitNode*, CircuitBranch*> nodeToBranch;
+
+    for (auto* node : topoOrder) {
+        auto prevNodes = node->getPrevNodes();
+
+        // Создать первую ветвь (для источника)
+        if (node == sourceNode) {
+            CircuitBranch* branch = new CircuitBranch();
+            // Добавить в неё узел-источник
+            branch->addNode(node);
+            nodeToBranch[node] = branch;
+            // Добавить созданную ветвь в список branches
+            branches.push_back(branch);
+            continue;
+        }
+
+        bool startNewBranch = false;
+
+        // Узел имеет более одного предка (точка слияния)
+        if (prevNodes.size() > 1) {
+            startNewBranch = true;
+        }
+        // Узел имеет одного предка с несколькими потомками (точка разветвления)
+        else if (prevNodes.size() == 1) {
+            CircuitNode* prev = prevNodes[0];
+            if (prev->getNextNodes().size() > 1) {
+                startNewBranch = true;
+            }
+        }
+
+        if (startNewBranch) {
+            // Создать новую ветвь
+            CircuitBranch* branch = new CircuitBranch();
+            // Добавить узел в новую ветвь
+            branch->addNode(node);
+            nodeToBranch[node] = branch;
+            // Добавить новую ветвь в список branches
+            branches.push_back(branch);
+
+            // Связать новую ветвь с ветвями предков
+            for (auto* prev : prevNodes) {
+                CircuitBranch* prevBranch = nodeToBranch[prev];
+                if (prevBranch) {
+                    prevBranch->addNextBranch(branch);
+                }
+            }
+        }
+        else
+        {
+            if (prevNodes.empty())
+            {
+                error.setError(ErrorType::InvalidCircuitTopology);
+                return false;
+            }
+
+            CircuitNode* prev = prevNodes[0];
+
+            CircuitBranch* prevBranch = nodeToBranch[prev];
+
+            if (prevBranch)
+            {
+                prevBranch->addNode(node);
+                nodeToBranch[node] = prevBranch;
+            }
+        }
+    }
+
+    // Замкнуть цепь: связать конечные ветви с ветвью источника
+    CircuitBranch* sourceBranch = nodeToBranch[sourceNode];
+    // Для каждого узла
+    for (auto* node : nodes) {
+        for (auto* next : node->getNextNodes()) {
+            // Если узел имеет связь обратно к источнику
+            if (next == sourceNode) {
+                CircuitBranch* fromBranch = nodeToBranch[node];
+                if (fromBranch && sourceBranch && fromBranch != sourceBranch) {
+                    bool alreadyConnected = false;
+                    for (auto* nb : fromBranch->getNextBranches()) {
+                        if (nb == sourceBranch) {
+                            alreadyConnected = true;
+                            break;
+                        }
+                    }
+                    // Связать, если связь ещё не установлена
+                    if (!alreadyConnected) {
+                        fromBranch->addNextBranch(sourceBranch);
+                    }
+                }
+            }
+        }
+    }
+    // Вычислить эквивалентные сопротивления всех ветвей
+    for (auto* branch : branches) {
+        branch->calculateEqResistance();
+    }
+    return true;
 }
 
 bool Circuit::calculateCurrents() {

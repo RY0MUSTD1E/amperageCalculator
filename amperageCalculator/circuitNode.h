@@ -186,6 +186,49 @@ public:
      */
     std::string getOriginalLabel() const;
 
+    // Методы для работы со связями
+
+    /**
+     * \brief Добавляет следующий узел с автоматическим обратным связыванием.
+     * \param node Указатель на следующий узел.
+     */
+    void addNextNode(CircuitNode* node);
+
+    /**
+     * \brief Добавляет предыдущий узел с автоматическим обратным связыванием.
+     * \param node Указатель на предыдущий узел.
+     */
+    void addPrevNode(CircuitNode* node);
+
+    /**
+     * \brief Добавляет следующий узел без создания обратной связи.
+     * \param node Указатель на следующий узел.
+     */
+    void addNextNodeOneWay(CircuitNode* node);
+
+    /**
+     * \brief Добавляет предыдущий узел без создания обратной связи.
+     * \param node Указатель на предыдущий узел.
+     */
+    void addPrevNodeOneWay(CircuitNode* node);
+
+    /**
+     * \brief Очищает все связи узла.
+     */
+    void clearConnections();
+
+    /**
+     * \brief Возвращает список следующих узлов.
+     * \return Вектор указателей на следующие узлы.
+     */
+    std::vector<CircuitNode*> getNextNodes() const;
+
+    /**
+     * \brief Возвращает список предыдущих узлов.
+     * \return Вектор указателей на предыдущие узлы.
+     */
+    std::vector<CircuitNode*> getPrevNodes() const;
+
 private:
     std::string name;                       ///< Имя элемента
     NodeType type;                          ///< Тип элемента
