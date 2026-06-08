@@ -16,8 +16,39 @@
 #include <map>
 #include <unordered_map>
 #include <unordered_set>
+#include <boost/graph/adjacency_list.hpp>
+#include <boost/graph/graphviz.hpp>
+#include <boost/graph/breadth_first_search.hpp>
 
 using namespace std;
+
+/**
+ * \brief Структура свойств вершины
+ */
+struct VertexProperties {
+    string name;
+    CircuitNode* nodePtr;
+};
+
+/**
+ * \brief Структура свойств ребра
+ */
+struct EdgeProperties {
+    string from;
+    string to;
+};
+
+// Типы графа Boost
+typedef boost::adjacency_list<
+    boost::vecS,           // Контейнер для вершин
+    boost::vecS,           // Контейнер для рёбер
+    boost::directedS,      // Ориентированный граф
+    VertexProperties,      // Свойства вершин
+    EdgeProperties         // Свойства рёбер
+> BoostGraph;
+
+typedef boost::graph_traits<BoostGraph>::vertex_descriptor BoostVertex;
+typedef boost::graph_traits<BoostGraph>::edge_descriptor BoostEdge;
 
   /**
    * \brief Класс, представляющий электрическую цепь
@@ -190,6 +221,35 @@ public:
      * \return true, если ограничение соблюдено; false при превышении.
      */
     bool validateParallelCount();
+
+
+    // Методы для работы с Boost.Graph
+
+    /**
+     * \brief Строит граф библиотеки Boost из внутреннего представления цепи.
+     * \return Объект BoostGraph, содержащий вершины и рёбра цепи.
+     */
+    BoostGraph buildBoostGraph();
+
+    /**
+     * \brief Проверяет, достижимы ли все вершины графа из заданной начальной вершины.
+     * \param[in] graph Граф библиотеки Boost.
+     * \param[in] startVertex Дескриптор начальной вершины (источник).
+     * \return true, если все вершины достижимы; false, если есть недостижимые вершины.
+     * \details Использует алгоритм поиска в ширину (BFS) с посетителем BFSReachabilityVisitor
+     * для обхода графа и отметки посещённых вершин.
+     */
+    bool checkReachability(const BoostGraph& graph, BoostVertex startVertex);
+
+    /**
+     * \brief Проверяет, что из каждой вершины графа существует путь обратно к источнику.
+     * \param[in] graph Граф библиотеки Boost.
+     * \param[in] startVertex Дескриптор вершины-источника.
+     * \return true, если из всех вершин можно достичь источника; false в противном случае.
+     * \details Для каждой вершины графа (кроме источника) запускает BFS и проверяет,
+     * входит ли источник в множество достижимых вершин.
+     */
+    bool checkReverseReachability(const BoostGraph& graph, BoostVertex startVertex);
 
     // Для тестов
     /**

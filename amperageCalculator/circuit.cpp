@@ -602,17 +602,221 @@ bool Circuit::validateValues() {
 }
 
 bool Circuit::validateEdges() {
+    // Проверить, есть ли хотя бы одна связь в цепи
+    if (edges.empty()) {
+        error.setError(ErrorType::NoConnections);
+        return false;
+    }
+
+    // Создать множество для хранения уже обработанных связей
+    set<pair<string, string>> usedEdges;
+
+    // Пройти по всем связям (рёбрам) графа
+    for (const auto& edge : edges) {
+
+        // Проверить, существует ли узел-источник
+        if (nameToNode.find(edge.first) == nameToNode.end()) {
+            error.setError(ErrorType::UndefinedComponent, edge.first);
+            return false;
+        }
+
+        // Проверить, существует ли узел-приёмник
+        if (nameToNode.find(edge.second) == nameToNode.end()) {
+            error.setError(ErrorType::UndefinedComponent, edge.second);
+            return false;
+        }
+
+        // Проверить, не соединяет ли элемент сам себя
+        if (edge.first == edge.second) {
+            error.setError(ErrorType::SelfConnection, edge.first);
+            return false;
+        }
+
+        // Проверить, нет ли дублирующейся связи
+        if (usedEdges.find(edge) != usedEdges.end()) {
+            error.setError(ErrorType::DuplicateConnection);
+            return false;
+        }
+
+        // Добавить текущую связь в множество обработанных
+        usedEdges.insert(edge);
+    }
+
     return true;
 }
 
 bool Circuit::validateConnectivity() {
+    // Проверить связность через подсчёт входящих/исходящих связей
+    unordered_map<string, int> outCount;
+    unordered_map<string, int> inCount;
+
+    for (auto* node : nodes) {
+        outCount[node->getName()] = 0;
+        inCount[node->getName()] = 0;
+    }
+
+    for (const auto& edge : edges) {
+        outCount[edge.first]++;
+        inCount[edge.second]++;
+    }
+
+    // Проверить, что у каждого узла есть хотя бы одна связь
+    for (auto* node : nodes) {
+        const string& name = node->getName();
+        if (outCount[name] == 0 && inCount[name] == 0) {
+            error.setError(ErrorType::IsolatedComponent, name);
+            return false;
+        }
+    }
+
     return true;
 }
 
 bool Circuit::validateClosure() {
+    // Проверить, нет ли полностью изолированных узлов
+    unordered_map<string, int> outCount;
+    unordered_map<string, int> inCount;
+
+    for (auto* node : nodes) {
+        outCount[node->getName()] = 0;
+        inCount[node->getName()] = 0;
+    }
+
+    for (const auto& edge : edges) {
+        outCount[edge.first]++;
+        inCount[edge.second]++;
+    }
+
+    for (auto* node : nodes) {
+        const string& name = node->getName();
+        if (outCount[name] == 0 && inCount[name] == 0) {
+            error.setError(ErrorType::IsolatedComponent, name);
+            return false;
+        }
+    }
+
+    // Проверить замкнутость через BFS
+    BoostGraph graph = buildBoostGraph();
+
+    BoostVertex sourceVertex = 0;
+    bool found = false;
+
+    auto vertexRange = boost::vertices(graph);
+    for (auto it = vertexRange.first; it != vertexRange.second; ++it) {
+        if (graph[*it].nodePtr->getType() == NodeType::Source) {
+            sourceVertex = *it;
+            found = true;
+            break;
+        }
+    }
+
+    if (!found) {
+        error.setError(ErrorType::MissingSource);
+        return false;
+    }
+
+    if (!checkReachability(graph, sourceVertex)) {
+        error.setError(ErrorType::CircuitNotClosed);
+        return false;
+    }
+
+    if (!checkReverseReachability(graph, sourceVertex)) {
+        error.setError(ErrorType::CircuitNotClosed);
+        return false;
+    }
+
     return true;
 }
 
 bool Circuit::validateParallelCount() {
+    // Группировать рёбра
+    map<string, vector<string>> sourceToDest;
+    for (const auto& edge : edges) {
+        sourceToDest[edge.first].push_back(edge.second);
+    }
+
+    // Для каждого источника проверить параллельные группы
+    for (auto itSrc = sourceToDest.begin(); itSrc != sourceToDest.end(); ++itSrc) {
+        const string& source = itSrc->first;
+        const vector<string>& dests = itSrc->second;
+
+        // Группировать dest по их предкам и потомкам
+        map<vector<string>, vector<string>> parallelGroups;
+
+        for (size_t i = 0; i < dests.size(); ++i) {
+            const string& dest = dests[i];
+
+            // Найти потомков этого dest
+            vector<string> nextNodes;
+            auto itNext = sourceToDest.find(dest);
+            if (itNext != sourceToDest.end()) {
+                nextNodes = itNext->second;
+                sort(nextNodes.begin(), nextNodes.end());
+            }
+
+            vector<string> key;
+            key.push_back(source);
+            for (const auto& nn : nextNodes) {
+                key.push_back(nn);
+            }
+            sort(key.begin(), key.end());
+
+            // Добавить в группу
+            parallelGroups[key].push_back(dest);
+        }
+
+        // Проверить размер каждой группы
+        for (auto itGroup = parallelGroups.begin(); itGroup != parallelGroups.end(); ++itGroup) {
+            if (itGroup->second.size() > 10) {
+                error.setError(ErrorType::TooManyParallelElements);
+                return false;
+            }
+        }
+    }
+
     return true;
+}
+
+bool Circuit::checkReachability(const BoostGraph& graph, BoostVertex startVertex) {
+    return true;
+}
+
+bool Circuit::checkReverseReachability(const BoostGraph& graph, BoostVertex startVertex) {
+    return true;
+}
+
+BoostGraph Circuit::buildBoostGraph() {
+    BoostGraph graph;
+    unordered_map<string, BoostVertex> vertexMap;
+
+    // Пройти по всем узлам электрической цепи
+    for (size_t i = 0; i < nodes.size(); ++i) {
+        // Заполнить свойства вершины
+        VertexProperties vp;
+        vp.name = nodes[i]->getName();
+        vp.nodePtr = nodes[i];
+
+        BoostVertex v = boost::add_vertex(vp, graph);
+        vertexMap[nodes[i]->getName()] = v;
+        nameToIndex[nodes[i]->getName()] = i;
+    }
+
+    // Пройти по всем связям (рёбрам) электрической цепи
+    for (const auto& edge : edges) {
+        // Найти дескрипторы вершин для начала и конца связи
+        auto srcIt = vertexMap.find(edge.first);
+        auto dstIt = vertexMap.find(edge.second);
+
+        // Проверить, что обе вершины существуют в отображении
+        if (srcIt != vertexMap.end() && dstIt != vertexMap.end()) {
+            // Заполнить свойства ребра
+            EdgeProperties ep;
+            ep.from = edge.first;
+            ep.to = edge.second;
+
+            // Добавить ребро в граф Boost
+            boost::add_edge(srcIt->second, dstIt->second, ep, graph);
+        }
+    }
+    return graph;
 }
