@@ -1158,9 +1158,121 @@ BoostGraph Circuit::buildBoostGraph() {
 // Вспомогательные методы расчета
 
 void Circuit::distributeCurrentsToBranches(CircuitBranch* branch) {
+    if (!branch) {
+        return;
+    }
+    if (branch->isVisited()) {
+        return;
+    }
+    branch->setVisited(true);
+
+    auto nextBranches = branch->getNextBranches();
+    if (nextBranches.empty()) {
+        return;
+    }
+
+    complex<double> incomingCurrent = branch->getAmperage();
+
+    // Если только одна следующая ветвь то весь ток идёт туда
+    if (nextBranches.size() == 1) {
+        CircuitBranch* nextBranch = nextBranches[0];
+        if (!nextBranch->isVisited()) {
+            nextBranch->setAmperage(incomingCurrent);
+            distributeCurrentsToBranches(nextBranch);
+        }
+        return;
+    }
+
+    // Отфильтровать непосещённые ветви
+    vector<CircuitBranch*> unvisitedBranches;
+    for (auto* nb : nextBranches) {
+        if (!nb->isVisited()) {
+            unvisitedBranches.push_back(nb);
+        }
+    }
+
+    if (unvisitedBranches.empty()) {
+        return;
+    }
+
+    // Если только одна непосещённая то весь ток ей
+    if (unvisitedBranches.size() == 1) {
+        unvisitedBranches[0]->setAmperage(incomingCurrent);
+        distributeCurrentsToBranches(unvisitedBranches[0]);
+        return;
+    }
+
+    // Вычислить сумму проводимостей для непосещённых ветвей
+    complex<double> sumAdmittance(0.0, 0.0);
+    for (auto* nb : unvisitedBranches) {
+        complex<double> impedance = nb->getEqResistance();
+        if (abs(impedance) > 1e-12) {
+            sumAdmittance += complex<double>(1.0, 0.0) / impedance;
+        }
+    }
+
+    if (abs(sumAdmittance) < 1e-12) {
+        return;
+    }
+
+    // Распределить ток
+    for (auto* nb : unvisitedBranches) {
+        complex<double> impedance = nb->getEqResistance();
+        if (abs(impedance) > 1e-12) {
+            complex<double> branchCurrent = incomingCurrent *
+                (complex<double>(1.0, 0.0) / impedance) / sumAdmittance;
+            nb->setAmperage(branchCurrent);
+            distributeCurrentsToBranches(nb);
+        }
+    }
 }
 
 complex<double> Circuit::calcTotalResistance(CircuitBranch* branch) {
-    complex<double> myResistance = 0.0;
-    return myResistance;
+    if (!branch) {
+        return complex<double>(0.0, 0.0);
+    }
+    if (branch->isVisited()) {
+        return complex<double>(0.0, 0.0);
+    }
+    branch->setVisited(true);
+
+    complex<double> myResistance = branch->getEqResistance();
+    auto nextBranches = branch->getNextBranches();
+
+    if (nextBranches.empty()) {
+        return myResistance;
+    }
+
+    // Отфильтровать непосещённые ветви
+    vector<CircuitBranch*> unvisitedBranches;
+    for (auto* nb : nextBranches) {
+        if (!nb->isVisited()) {
+            unvisitedBranches.push_back(nb);
+        }
+    }
+
+    if (unvisitedBranches.empty()) {
+        return myResistance;
+    }
+
+    // Если одна следующая ветвь то последовательное соединение
+    if (unvisitedBranches.size() == 1) {
+        return myResistance + calcTotalResistance(unvisitedBranches[0]);
+    }
+
+    // Если несколько ветвей то параллельное соединение
+    complex<double> sumAdmittance(0.0, 0.0);
+    for (auto* nb : unvisitedBranches) {
+        complex<double> childResistance = calcTotalResistance(nb);
+        if (abs(childResistance) > 1e-12) {
+            sumAdmittance += complex<double>(1.0, 0.0) / childResistance;
+        }
+    }
+
+    complex<double> parallelResistance(0.0, 0.0);
+    if (abs(sumAdmittance) > 1e-12) {
+        parallelResistance = complex<double>(1.0, 0.0) / sumAdmittance;
+    }
+
+    return myResistance + parallelResistance;
 }
