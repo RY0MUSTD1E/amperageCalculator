@@ -778,10 +778,54 @@ bool Circuit::validateParallelCount() {
 }
 
 bool Circuit::checkReachability(const BoostGraph& graph, BoostVertex startVertex) {
+    size_t numVertices = boost::num_vertices(graph);
+    vector<bool> visited(numVertices, false);
+    BFSReachabilityVisitor visitor(visited);
+
+    // Выполнить обход графа в ширину, начиная с указанной вершины
+    try {
+        boost::breadth_first_search(graph, startVertex, boost::visitor(visitor));
+    }
+    catch (...) {
+        return false;
+    }
+
+    // Пройти по всем вершинам графа
+    for (size_t i = 0; i < numVertices; ++i) {
+        // Если хотя бы одна вершина не была посещена — граф несвязный
+        if (!visited[i]) return false;
+    }
     return true;
 }
 
 bool Circuit::checkReverseReachability(const BoostGraph& graph, BoostVertex startVertex) {
+    size_t numVertices = boost::num_vertices(graph);
+
+    // Пройти по всем вершинам графа 
+    for (size_t i = 0; i < numVertices; ++i) {
+        // Пропустить стартовую вершину (источник)
+        if (i == startVertex) {
+            continue;
+        }
+        // Создать массив флагов посещения для текущего обхода
+        vector<bool> visited(numVertices, false);
+        BFSReachabilityVisitor visitor(visited);
+
+        // Выполнить обход графа в ширину
+        try {
+            boost::breadth_first_search(graph, i, boost::visitor(visitor));
+        }
+        catch (const std::exception&) {
+            return false;
+        }
+
+        // Проверить, достижима ли вершина источника от текущей вершины
+        if (!visited[startVertex]) {
+            // Если от какой-либо вершины нельзя добраться до источника — цепь не замкнута
+            error.setError(ErrorType::CircuitNotClosed);
+            return false;
+        }
+    }
     return true;
 }
 

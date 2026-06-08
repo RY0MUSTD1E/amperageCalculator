@@ -232,6 +232,22 @@ public:
     BoostGraph buildBoostGraph();
 
     /**
+     * \class BFSReachabilityVisitor
+     * \brief Вспомогательный класс-посетитель для алгоритма поиска в ширину (BFS) из библиотеки Boost.
+     * Наследуется от boost::default_bfs_visitor и переопределяет метод discover_vertex() для отслеживания посещённых вершин в процессе обхода графа.
+     */
+    class BFSReachabilityVisitor : public boost::default_bfs_visitor {
+    public:
+        vector<bool>& visited;
+        BFSReachabilityVisitor(vector<bool>& v) : visited(v) {}
+
+        template<typename Vertex, typename Graph>
+        void discover_vertex(Vertex u, const Graph& g) {
+            visited[u] = true;
+        }
+    };
+
+    /**
      * \brief Проверяет, достижимы ли все вершины графа из заданной начальной вершины.
      * \param[in] graph Граф библиотеки Boost.
      * \param[in] startVertex Дескриптор начальной вершины (источник).
