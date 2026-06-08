@@ -351,7 +351,19 @@ bool Circuit::calculateCurrents() {
 }
 
 bool Circuit::calculate() {
-    return false;
+    // Перевести в комплексные сопротивления
+    if (!calculateImpedances()) {
+        return false;
+    }
+    // Построить ветви
+    if (!buildBranches()) {
+        return false;
+    }
+    // Рассчитать токи
+    if (!calculateCurrents()) {
+        return false;
+    }
+    return true;
 }
 
 bool Circuit::writeToFile(const string& filename) {
