@@ -526,7 +526,71 @@ bool Circuit::buildBranches() {
 }
 
 bool Circuit::calculateCurrents() {
-    return false;
+    if (branches.empty()) {
+        error.setError(ErrorType::CircuitNotClosed);
+        return false;
+    }
+
+    // Найти ветвь, содержащую источник ЭДС (главную ветвь)
+    CircuitBranch* mainBranch = nullptr;
+    for (auto* branch : branches) {
+        for (auto* node : branch->getNodes()) {
+            if (node->getType() == NodeType::Source) {
+                mainBranch = branch;
+                break;
+            }
+        }
+        if (mainBranch) {
+            break;
+        }
+    }
+
+    if (!mainBranch) {
+        error.setError(ErrorType::MissingSource);
+        return false;
+    }
+
+    // Сбросить флаги visited у всех ветвей
+    for (auto* branch : branches) {
+        branch->setVisited(false);
+    }
+
+    // Рассчитать эквивалентное сопротивление всей цепи
+    complex<double> totalResistance = calcTotalResistance(mainBranch);
+
+    // Если Z_общ близко к нулю (|Z_общ| < 1e-12)
+    if (abs(totalResistance) < 1e-12) {
+        error.setError(ErrorType::ValueOutOfRange);
+        return false;
+    }
+
+    // Рассчитать ток главной ветви
+    double phaseRad = sourcePhase * pi / 180.0;
+    complex<double> sourceVoltageComplex(sourceVoltage * cos(phaseRad), sourceVoltage * sin(phaseRad));
+
+    complex<double> mainCurrent = sourceVoltageComplex / totalResistance;
+    // Установить этот ток в главной ветви
+    mainBranch->setAmperage(mainCurrent);
+
+    // Сбросить visited снова для распределения токов
+    for (auto* branch : branches) {
+        branch->setVisited(false);
+    }
+
+    // Распределить токи по всем ветвям
+    distributeCurrentsToBranches(mainBranch);
+
+    // Записать рассчитанные токи в узлы
+    // Для каждой ветви из списка branches
+    for (auto* branch : branches) {
+        complex<double> branchCurrent = branch->getAmperage();
+        // Для каждого узла в ветви
+        for (auto* node : branch->getNodes()) {
+            // Установить ток узла равным току ветви
+            node->setAmperage(branchCurrent);
+        }
+    }
+    return true;
 }
 
 bool Circuit::calculate() {
@@ -1089,4 +1153,14 @@ BoostGraph Circuit::buildBoostGraph() {
         }
     }
     return graph;
+}
+
+// Вспомогательные методы расчета
+
+void Circuit::distributeCurrentsToBranches(CircuitBranch* branch) {
+}
+
+complex<double> Circuit::calcTotalResistance(CircuitBranch* branch) {
+    complex<double> myResistance = 0.0;
+    return myResistance;
 }

@@ -270,6 +270,21 @@ public:
      */
     bool checkReverseReachability(const BoostGraph& graph, BoostVertex startVertex);
 
+    // Вспомогательные методы расчета токов
+
+    /**
+     * \brief Распределяет ток от текущей ветви к следующим.
+     * \param[in,out] branch Указатель на текущую ветвь.
+     */
+    void distributeCurrentsToBranches(CircuitBranch* branch);
+
+    /**
+     * \brief Вычисляет эквивалентное сопротивление цепи от заданной ветви.
+     * \param[in] branch Указатель на начальную ветвь.
+     * \return Комплексное эквивалентное сопротивление всей последующей цепи.
+     */
+    complex<double> calcTotalResistance(CircuitBranch* branch);
+
     // Для тестов
     /**
      * \brief Находит узел цепи по его имени.
