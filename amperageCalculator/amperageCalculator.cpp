@@ -1,4 +1,54 @@
 ﻿/**
+ * \mainpage Главная страница
+ * \section description Описание
+ * Программа предназначена для расчёта распределения токов в электрической цепи переменного тока, 
+ * содержащей один источник напряжения и некоторое количество пссивных элементов (резисторы, конденсаторы и катушки индуктивности). 
+ *
+ * \section input Формат входных данных
+ * Входной файл с электрической цепью должен иметь расширение .txt
+ * Электрическая цепь должна быть записана в формате DOT (ориентированный граф):
+ * \verbatim
+digraph circuit {
+    SOURCE [label="SOURCE frequency=50 voltage=100 phase=0"]
+    R1 [label="R=10"]
+    R2 [label="R=20"]
+    R3 [label="R=30"]
+    SOURCE -> R1
+    R1 -> R2
+    R2 -> R3
+    R3 -> SOURCE
+}
+ \endverbatim
+ * 
+ * \section output Формат выходных данных
+ * Выходной файл содержит ту же цепь, но с рассчитанными значениями токов:
+ * \verbatim
+digraph circuit {
+    SOURCE [label="SOURCE frequency=50 voltage=100 phase=0 I=complex<double>(1.666667, 0.000000) A"]
+    R1 [label="R=10.000000 I=complex<double>(1.666667, 0.000000) A"]
+    R2 [label="R=20.000000 I=complex<double>(1.666667, 0.000000) A"]
+    R3 [label="R=30.000000 I=complex<double>(1.666667, 0.000000) A"]
+    SOURCE -> R1
+    R1 -> R2
+    R2 -> R3
+    R3 -> SOURCE
+}
+ \endverbatim
+ *
+ * \section example Пример запуска
+ * \code
+ * ../amperageCalculator input.txt output.txt
+ * \endcode
+ *
+ * \section requirements Основные требования
+ * - Частота источника должна быть положительной
+ * - Фаза источника в диапазоне [0, 360] градусов
+ * - Номиналы R, L, C > 0
+ * - Электрическая цепь должна быть замкнута
+ *
+ * \author Anna Bezhenar
+ * \date June 2026
+ * 
  * \file amperageCalculator.cpp
  * \brief Главный файл программы для расчёта токов в электрической цепи переменного тока.
  *
