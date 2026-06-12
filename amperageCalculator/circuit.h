@@ -1,10 +1,10 @@
- /**
-  * \file circuit.h
-  * \brief Класс Circuit: парсинг, валидация и расчёт электрической цепи.
-  *
-  * \author Anna Bezhenar
-  * \date June 2026
-  */
+/**
+ * \file circuit.h
+ * \brief Класс Circuit: парсинг, валидация и расчёт электрической цепи.
+ *
+ * \author Anna Bezhenar
+ * \date June 2026
+ */
 
 #pragma once
 
@@ -26,22 +26,29 @@ constexpr long double pi = 3.14159265358979323846;
 using namespace std;
 
 /**
- * \brief Структура свойств вершины
+ * \struct VertexProperties
+ * \brief Свойства вершины графа Boost.
+ *
+ * Используется для хранения имени узла и указателя на соответствующий
+ * объект CircuitNode при построении Boost-графа.
  */
 struct VertexProperties {
-    string name;
-    CircuitNode* nodePtr;
+    string name;          ///< Имя вершины
+    CircuitNode* nodePtr; ///< Указатель на соответствующий объект CircuitNode
 };
 
 /**
- * \brief Структура свойств ребра
+ * \struct EdgeProperties
+ * \brief Свойства ребра графа Boost.
+ *
+ * Хранит имена начальной и конечной вершин для ребра графа.
  */
 struct EdgeProperties {
-    string from;
-    string to;
+    string from; ///< Имя начальной вершины
+    string to;   ///< Имя конечной вершины
 };
 
-// Типы графа Boost
+/// Граф электрической цепи на основе Boost.Graph.
 typedef boost::adjacency_list<
     boost::vecS,           // Контейнер для вершин
     boost::vecS,           // Контейнер для рёбер
@@ -50,12 +57,15 @@ typedef boost::adjacency_list<
     EdgeProperties         // Свойства рёбер
 > BoostGraph;
 
+/// Дескриптор вершины графа Boost.
 typedef boost::graph_traits<BoostGraph>::vertex_descriptor BoostVertex;
+
+/// Дескриптор ребра графа Boost.
 typedef boost::graph_traits<BoostGraph>::edge_descriptor BoostEdge;
 
-  /**
-   * \brief Класс, представляющий электрическую цепь
-   */
+/**
+ * \brief Класс, представляющий электрическую цепь.
+ */
 class Circuit {
 public:
 
@@ -114,9 +124,17 @@ public:
      */
     bool writeToFile(const string& filename);
 
+    /**
+     * \brief Возвращает информацию о последней ошибке.
+     * \return Объект Error, содержащий сведения о возникшей ошибке.
+     */
     const Error& getError() const {
         return error;
     }
+    /**
+     * \brief Возвращает список ветвей электрической цепи.
+     * \return Константная ссылка на вектор указателей на объекты CircuitBranch.
+     */
     const vector<CircuitBranch*>& getBranches() const {
         return branches;
     }
@@ -155,7 +173,7 @@ public:
 
     /**
      * \brief Парсит содержимое label для пассивного элемента (R, L, C).
-     * \param content Строка содержимого label (например, "R=100", "L=0.1", "C=100e-6").
+     * \param[in] content Строка содержимого label (например, "R=100", "L=0.1", "C=100e-6").
      * \param[out] params Структура ParamsOfNode для записи распарсенных параметров.
      * \return true, если парсинг успешен; false в противном случае.
      */
@@ -177,6 +195,7 @@ public:
     bool validateExponentialFormat(const string& s);
 
     // Вспомогательные методы валидации
+
     /**
      * \brief Проверяет корректность имён всех узлов цепи.
      * \return true, если все имена корректны; false при обнаружении некорректного имени.
@@ -237,13 +256,26 @@ public:
     /**
      * \class BFSReachabilityVisitor
      * \brief Вспомогательный класс-посетитель для алгоритма поиска в ширину (BFS) из библиотеки Boost.
-     * Наследуется от boost::default_bfs_visitor и переопределяет метод discover_vertex() для отслеживания посещённых вершин в процессе обхода графа.
+     * Наследуется от boost::default_bfs_visitor и переопределяет метод
+     * discover_vertex() для отслеживания посещённых вершин в процессе обхода графа.
      */
     class BFSReachabilityVisitor : public boost::default_bfs_visitor {
     public:
-        vector<bool>& visited;
+        vector<bool>& visited; ///< Вектор, содержащий информацию о посещённых вершинах.
+
+        /**
+         * \brief Конструктор посетителя BFS.
+         * \param[in] v Массив отметок о посещении вершин.
+         */
         BFSReachabilityVisitor(vector<bool>& v) : visited(v) {}
 
+        /**
+         * \brief Вызывается при обнаружении новой вершины в процессе обхода графа.
+         * \tparam Vertex Тип дескриптора вершины графа.
+         * \tparam Graph Тип графа Boost.
+         * \param[in] u Обнаруженная вершина.
+         * \param[in] g Граф, в котором выполняется обход.
+         */
         template<typename Vertex, typename Graph>
         void discover_vertex(Vertex u, const Graph& g) {
             visited[u] = true;
@@ -286,15 +318,26 @@ public:
     complex<double> calcTotalResistance(CircuitBranch* branch);
 
     // Для тестов
+
     /**
      * \brief Находит узел цепи по его имени.
      * \param[in] name Имя искомого узла.
      * \return Указатель на найденный узел CircuitNode; nullptr, если узел не найден.
      */
     CircuitNode* getNodeByName(const string& name) const;
+
+    /**
+     * \brief Возвращает количество узлов цепи.
+     * \return Количество узлов цепи.
+     */
     size_t getNodeCount() const {
         return nodes.size();
     }
+
+    /**
+     * \brief Возвращает количество связей цепи.
+     * \return Количество связей между узлами цепи.
+     */
     size_t getEdgeCount() const {
         return edges.size();
     }
@@ -302,15 +345,15 @@ public:
 private:
 
     // Поля класса
-    double frequency;
-    double sourceVoltage;
-    double sourcePhase;
-    vector<CircuitNode*> nodes;
-    vector<pair<string, string>> edges;
-    vector<CircuitBranch*> branches;
-    Error error;
+    double frequency;                    ///< Частота источника (Гц)
+    double sourceVoltage;                ///< Амплитуда напряжения источника (В)
+    double sourcePhase;                  ///< Начальная фаза источника (градусы)
+    vector<CircuitNode*> nodes;          ///< Список всех узлов цепи
+    vector<pair<string, string>> edges;  ///< Список связей между узлами
+    vector<CircuitBranch*> branches;     ///< Список ветвей цепи
+    Error error;                         ///< Объект для хранения ошибок
 
-    unordered_map<string, CircuitNode*> nameToNode;
-    unordered_map<string, size_t> nameToIndex;
-    vector<string> nodeDefinitions;
+    unordered_map<string, CircuitNode*> nameToNode; ///< Отображение имени компонента в соответствующий объект CircuitNode.
+    unordered_map<string, size_t> nameToIndex;      ///< Отображение имени компонента в индекс вершины графа.
+    vector<string> nodeDefinitions;                 ///< Исходные описания компонентов, считанные из входного файла.
 };
