@@ -92,6 +92,11 @@ int main(int argc, char* argv[]) {
         cout << "Ошибка: " << circuit.getError().getMessage() << endl;
         return 1;
     }
+    // Проверить корректность цепи
+    if (!circuit.validate()) {
+        cout << "Ошибка: " << circuit.getError().getMessage() << endl;
+        return 1;
+    }
     // Выполнить расчет цепи
     if (!circuit.calculate()) {
         cout << "Ошибка: " << circuit.getError().getMessage() << endl;
