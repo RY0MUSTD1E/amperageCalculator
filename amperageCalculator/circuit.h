@@ -128,16 +128,12 @@ public:
      * \brief Возвращает информацию о последней ошибке.
      * \return Объект Error, содержащий сведения о возникшей ошибке.
      */
-    const Error& getError() const {
-        return error;
-    }
+    const Error& getError() const;
     /**
      * \brief Возвращает список ветвей электрической цепи.
      * \return Константная ссылка на вектор указателей на объекты CircuitBranch.
      */
-    const vector<CircuitBranch*>& getBranches() const {
-        return branches;
-    }
+    const vector<CircuitBranch*>& getBranches() const;
 
     // Вспомогательные методы парсинга
    /**
@@ -330,17 +326,13 @@ public:
      * \brief Возвращает количество узлов цепи.
      * \return Количество узлов цепи.
      */
-    size_t getNodeCount() const {
-        return nodes.size();
-    }
+    size_t getNodeCount() const;
 
     /**
      * \brief Возвращает количество связей цепи.
      * \return Количество связей между узлами цепи.
      */
-    size_t getEdgeCount() const {
-        return edges.size();
-    }
+    size_t getEdgeCount() const;
 
 private:
 

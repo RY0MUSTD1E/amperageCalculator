@@ -37,6 +37,22 @@ CircuitNode* Circuit::getNodeByName(const string& name) const {
     return (it != nameToNode.end()) ? it->second : nullptr;
 }
 
+size_t Circuit::getNodeCount() const {
+    return nodes.size();
+}
+
+size_t Circuit::getEdgeCount() const {
+    return edges.size();
+}
+
+const Error& Circuit::getError() const {
+    return error;
+}
+
+const vector<CircuitBranch*>& Circuit::getBranches() const {
+    return branches;
+}
+
 string Circuit::trim(const string& s) {
     // Найти первый символ, не являющийся пробельным
     size_t start = s.find_first_not_of(" \t\r\n");
