@@ -626,54 +626,7 @@ bool Circuit::calculate() {
 }
 
 bool Circuit::writeToFile(const string& filename) {
-    // Открыть файл
-    ofstream outFile(filename);
-    if (!outFile.is_open()) {
-        error.setError(ErrorType::OutputFileCreateFail, "", 0, filename);
-        return false;
-    }
-
-    // Записать граф в формате DOT
-    outFile << "digraph circuit {" << endl;
-
-    // Определения элементов с токами
-    for (auto* node : nodes) {
-        outFile << node->getName() << " [label=\"";
-
-        // Тип и параметры
-        if (node->getType() == NodeType::Source) {
-            outFile << "SOURCE frequency=" << node->getFrequency()
-                << " voltage=" << node->getVoltage()
-                << " phase=" << node->getPhase();
-        }
-        else {
-            char typeChar = 'R';
-            if (node->getType() == NodeType::Coil) {
-                typeChar = 'L';
-            }
-            else if (node->getType() == NodeType::Capacitor) {
-                typeChar = 'C';
-            }
-            outFile << typeChar << "=" << node->getValue();
-        }
-        // Добавить ток
-        complex<double> current = node->getAmperage();
-        outFile << " I=complex<double>("
-            << fixed << setprecision(6) << current.real()
-            << ", " << current.imag() << ") A\"]" << endl;
-    }
-    outFile << endl;
-
-    // Связи
-    for (const auto& edge : edges) {
-        outFile << edge.first << " -> " << edge.second << endl;
-    }
-    // Закрывающая скобка
-    outFile << "}" << endl;
-    // Закрыть файл
-    outFile.close();
-
-    return true;
+    return false;
 }
 
 // Вспомогательные методы парсинга
