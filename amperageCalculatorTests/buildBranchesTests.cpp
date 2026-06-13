@@ -23,6 +23,24 @@ namespace CircuitTests
     TEST_CLASS(BuildBranchesTests)
     {
     public:
+
+        TEST_METHOD(NoPrevNodes)
+        {
+            string circuitStr =
+                "digraph circuit {\n"
+                "SOURCE [label=\"SOURCE frequency=50 voltage=100 phase=0\"]\n"
+                "R1 [label=\"R=10\"]\n"
+                "R2 [label=\"R=20\"]\n"
+                "SOURCE -> R1\n"
+                "R2 -> SOURCE\n"
+                "}\n";
+            Circuit* circuit = createCircuitFromString(circuitStr);
+            circuit->calculateImpedances();
+            bool result = circuit->buildBranches();
+            Assert::IsFalse(result);
+
+            delete circuit;
+        }
         TEST_METHOD(MissingSource)
         {
             string circuitStr =
