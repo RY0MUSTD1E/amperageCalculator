@@ -342,16 +342,6 @@ bool Circuit::validate() {
         return false;
     }
 
-    // Проверить имена элементов
-    if (!validateNames()) {
-        return false;
-    }
-
-    // Проверить уникальность имён
-    if (!validateUniqueness()) {
-        return false;
-    }
-
     // Проверить наличие источника ЭДС и корректность значений источника
     if (!validateSource()) {
         return false;
@@ -958,35 +948,6 @@ bool Circuit::validateExponentialFormat(const string& s) {
 }
 
 // Вспомогательные методы валидации
-
-bool Circuit::validateNames() {
-    // Пройти по всем узлам цепи
-    for (auto* node : nodes) {
-        // Проверить корректность имени каждого узла
-        if (!isValidName(node->getName())) {
-            error.setError(ErrorType::InvalidComponentName, node->getName());
-            return false;
-        }
-    }
-    return true;
-}
-
-bool Circuit::validateUniqueness() {
-    // Создать множество для хранения уже встреченных имён
-    unordered_set<string> usedNames;
-
-    // Пройти по всем узлам цепи
-    for (auto* node : nodes) {
-        // Проверить, не встречалось ли имя ранее
-        if (usedNames.find(node->getName()) != usedNames.end()) {
-            error.setError(ErrorType::DuplicateComponent, node->getName());
-            return false;
-        }
-        // Добавить имя в множество обработанных
-        usedNames.insert(node->getName());
-    }
-    return true;
-}
 
 bool Circuit::validateSource() {
     int sourceCount = 0;
