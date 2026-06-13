@@ -23,6 +23,21 @@ namespace CircuitTests
     TEST_CLASS(BuildBranchesTests)
     {
     public:
+        TEST_METHOD(MissingSource)
+        {
+            string circuitStr =
+                "digraph circuit {\n"
+                "R1 [label=\"R=10\"]\n"
+                "R2 [label=\"R=20\"]\n"
+                "R1 -> R2\n"
+                "R2 -> R1\n"
+                "}\n";
+            Circuit* circuit = createCircuitFromString(circuitStr);
+            bool result = circuit->buildBranches();
+            Assert::IsFalse(result);
+
+            delete circuit;
+        }
         TEST_METHOD(SeriesConnection)
         {
             string circuitStr =
