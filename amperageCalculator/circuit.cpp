@@ -1096,18 +1096,20 @@ bool Circuit::validateEdges() {
 }
 
 bool Circuit::validateConnectivity() {
-    // Проверить связность через подсчёт входящих/исходящих связей
+    // Подсчитать количество входящих и исходящих связей для каждого узла
     unordered_map<string, int> outCount;
     unordered_map<string, int> inCount;
 
+    // Инициализировать нулевыми значениями
     for (auto* node : nodes) {
         outCount[node->getName()] = 0;
         inCount[node->getName()] = 0;
     }
 
+    // Подсчитать связи из списка рёбер
     for (const auto& edge : edges) {
-        outCount[edge.first]++;
-        inCount[edge.second]++;
+        outCount[edge.first]++;   // Исходящая связь от источника
+        inCount[edge.second]++;   // Входящая связь к приёмнику
     }
 
     // Проверить, что у каждого узла есть хотя бы одна связь
@@ -1123,20 +1125,23 @@ bool Circuit::validateConnectivity() {
 }
 
 bool Circuit::validateClosure() {
-    // Проверить, нет ли полностью изолированных узлов
+    // Проверить отсутствие изолированных узлов
     unordered_map<string, int> outCount;
     unordered_map<string, int> inCount;
 
+    // Инициализировать счетчики
     for (auto* node : nodes) {
         outCount[node->getName()] = 0;
         inCount[node->getName()] = 0;
     }
 
+    // Подсчитать входящие и исходящие связи
     for (const auto& edge : edges) {
         outCount[edge.first]++;
         inCount[edge.second]++;
     }
 
+    // Проверить, что каждый узел имеет хотя бы одну связь
     for (auto* node : nodes) {
         const string& name = node->getName();
         if (outCount[name] == 0 && inCount[name] == 0) {
@@ -1145,9 +1150,10 @@ bool Circuit::validateClosure() {
         }
     }
 
-    // Проверить замкнутость через BFS
+    // Построить граф Boost для BFS обхода
     BoostGraph graph = buildBoostGraph();
 
+    // Найти вершину-источник
     BoostVertex sourceVertex = 0;
     bool found = false;
 
@@ -1160,16 +1166,19 @@ bool Circuit::validateClosure() {
         }
     }
 
+    // Если источник не найден - ошибка
     if (!found) {
         error.setError(ErrorType::MissingSource);
         return false;
     }
 
+    // Проверить достижимость всех узлов от источника
     if (!checkReachability(graph, sourceVertex)) {
         error.setError(ErrorType::CircuitNotClosed);
         return false;
     }
 
+    // Проверить наличие обратного пути от каждого узла к источнику
     if (!checkReverseReachability(graph, sourceVertex)) {
         error.setError(ErrorType::CircuitNotClosed);
         return false;
@@ -1318,32 +1327,34 @@ BoostGraph Circuit::buildBoostGraph() {
 // Вспомогательные методы расчета
 
 void Circuit::distributeCurrentsToBranches(CircuitBranch* branch) {
-    if (!branch) {
-        return;
-    }
-    if (branch->isVisited()) {
-        return;
-    }
+    // Проверить корректность ветви
+    if (!branch) return;
+    if (branch->isVisited()) return;
+
+    // Отметить ветвь как посещённую
     branch->setVisited(true);
 
+    // Получить список следующих ветвей
     auto nextBranches = branch->getNextBranches();
-    if (nextBranches.empty()) {
-        return;
-    }
+    if (nextBranches.empty()) return;
 
+    // Получить входящий ток текущей ветви
     complex<double> incomingCurrent = branch->getAmperage();
 
-    // Если только одна следующая ветвь то весь ток идёт туда
+    // Одна следующая ветвь — последовательное соединение
     if (nextBranches.size() == 1) {
         CircuitBranch* nextBranch = nextBranches[0];
         if (!nextBranch->isVisited()) {
+            // Передать весь ток в следующую ветвь
             nextBranch->setAmperage(incomingCurrent);
+            // Рекурсивно продолжить распределение
             distributeCurrentsToBranches(nextBranch);
         }
         return;
     }
 
-    // Отфильтровать непосещённые ветви
+    // Несколько ветвей — параллельное соединение
+    // Отфильтровать только непосещённые ветви
     vector<CircuitBranch*> unvisitedBranches;
     for (auto* nb : nextBranches) {
         if (!nb->isVisited()) {
@@ -1351,59 +1362,69 @@ void Circuit::distributeCurrentsToBranches(CircuitBranch* branch) {
         }
     }
 
-    if (unvisitedBranches.empty()) {
-        return;
-    }
+    if (unvisitedBranches.empty()) return;
 
-    // Если только одна непосещённая то весь ток ей
+    // Если после фильтрации осталась одна ветвь
     if (unvisitedBranches.size() == 1) {
         unvisitedBranches[0]->setAmperage(incomingCurrent);
         distributeCurrentsToBranches(unvisitedBranches[0]);
         return;
     }
 
-    // Вычислить сумму проводимостей для непосещённых ветвей
+    // Вычислить сумму проводимостей параллельных ветвей
     complex<double> sumAdmittance(0.0, 0.0);
+    const double EPS = 1e-12;
+
     for (auto* nb : unvisitedBranches) {
         complex<double> impedance = nb->getEqResistance();
-        if (abs(impedance) > 1e-12) {
+        if (abs(impedance) > EPS) {
             sumAdmittance += complex<double>(1.0, 0.0) / impedance;
         }
     }
 
-    if (abs(sumAdmittance) < 1e-12) {
-        return;
-    }
+    if (abs(sumAdmittance) < EPS) return;
 
-    // Распределить ток
+    // Распределить ток пропорционально проводимостям
     for (auto* nb : unvisitedBranches) {
         complex<double> impedance = nb->getEqResistance();
-        if (abs(impedance) > 1e-12) {
-            complex<double> branchCurrent = incomingCurrent *
-                (complex<double>(1.0, 0.0) / impedance) / sumAdmittance;
+        if (abs(impedance) > EPS) {
+            complex<double> admittance = complex<double>(1.0, 0.0) / impedance;
+            complex<double> branchCurrent = incomingCurrent * admittance / sumAdmittance;
+
+            // Установить рассчитанный ток
             nb->setAmperage(branchCurrent);
+
+            // Рекурсивно распределить ток дальше
             distributeCurrentsToBranches(nb);
         }
     }
 }
 
 complex<double> Circuit::calcTotalResistance(CircuitBranch* branch) {
+    // Проверить корректность ветви
     if (!branch) {
         return complex<double>(0.0, 0.0);
     }
+
+    // Проверить, не посещали ли уже эту ветвь
     if (branch->isVisited()) {
         return complex<double>(0.0, 0.0);
     }
+
     branch->setVisited(true);
 
+    // Получить сопротивление текущей ветви
     complex<double> myResistance = branch->getEqResistance();
+
+    // Получить список следующих ветвей
     auto nextBranches = branch->getNextBranches();
 
+    // Если нет следующих ветвей — вернуть своё сопротивление
     if (nextBranches.empty()) {
         return myResistance;
     }
 
-    // Отфильтровать непосещённые ветви
+    // Отфильтровать только непосещённые ветви
     vector<CircuitBranch*> unvisitedBranches;
     for (auto* nb : nextBranches) {
         if (!nb->isVisited()) {
@@ -1411,28 +1432,34 @@ complex<double> Circuit::calcTotalResistance(CircuitBranch* branch) {
         }
     }
 
+    // Если все следующие ветви уже посещены
     if (unvisitedBranches.empty()) {
         return myResistance;
     }
 
-    // Если одна следующая ветвь то последовательное соединение
+    // Одна следующая ветвь — последовательное соединение
     if (unvisitedBranches.size() == 1) {
         return myResistance + calcTotalResistance(unvisitedBranches[0]);
     }
 
     // Если несколько ветвей то параллельное соединение
+    // Вычислить сумму проводимостей (1/Z) для всех параллельных ветвей
     complex<double> sumAdmittance(0.0, 0.0);
+    const double EPS = 1e-12;
+
     for (auto* nb : unvisitedBranches) {
         complex<double> childResistance = calcTotalResistance(nb);
-        if (abs(childResistance) > 1e-12) {
+        if (abs(childResistance) > EPS) {
             sumAdmittance += complex<double>(1.0, 0.0) / childResistance;
         }
     }
 
+    // Вычислить эквивалентное сопротивление параллельного участка
     complex<double> parallelResistance(0.0, 0.0);
-    if (abs(sumAdmittance) > 1e-12) {
+    if (abs(sumAdmittance) > EPS) {
         parallelResistance = complex<double>(1.0, 0.0) / sumAdmittance;
     }
 
+    // Вернуть общее сопротивление
     return myResistance + parallelResistance;
 }
