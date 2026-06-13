@@ -413,6 +413,48 @@ public:
      * \param[in] parsedNodes Вектор распарсенных параметров узлов.
      */
     void buildNodes(const vector<ParamsOfNode>& parsedNodes);
+    
+    /**
+    * \brief Удаляет ранее построенные ветви и очищает связи между узлами.
+    */
+    void clearBranches();
+
+    /**
+     * \brief Выполняет поиск источника питания в схеме.
+     *
+     * \return Указатель на узел-источник или nullptr, если источник отсутствует.
+     */
+    CircuitNode* findSourceNode();
+
+    /**
+     * \brief Формирует связи между узлами на основе списка рёбер.
+     *
+     * Заполняет списки предыдущих и следующих узлов для каждого элемента схемы.
+     */
+    void buildNodeConnections();
+
+    /**
+     * \brief Выполняет топологическую сортировку узлов схемы.
+     *
+     * Формирует порядок обхода узлов, необходимый для последующего построения ветвей.
+     *
+     * \param[in] sourceNode Узел-источник схемы.
+     * \return Вектор узлов в топологическом порядке.
+     */
+    vector<CircuitNode*> buildTopologicalOrder(CircuitNode* sourceNode);
+
+    /**
+     * \brief Формирует ветви электрической цепи.
+     *
+     * Распределяет узлы по ветвям, создаёт новые ветви в точках
+     * разветвления и слияния, а также устанавливает связи между ветвями.
+     *
+     * \param[in] topoOrder Узлы в топологическом порядке.
+     * \param[in] sourceNode Узел-источник схемы.
+     * \param[out] nodeToBranch Соответствие узлов и принадлежащих им ветвей.
+     * \return true, если ветви успешно построены; false при ошибке топологии.
+     */
+    bool createBranches(const vector<CircuitNode*>& topoOrder, CircuitNode* sourceNode, map<CircuitNode*, CircuitBranch*>& nodeToBranch);
 
 private:
 
