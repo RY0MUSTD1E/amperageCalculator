@@ -25,6 +25,24 @@ namespace CircuitTests
     public:
         const double PI = 3.14159265358979323846;
 
+        TEST_METHOD(CapacitorZeroCapacitance)
+        {
+            string circuitStr =
+                "digraph circuit {\n"
+                "source [label=\"SOURCE frequency=50 voltage=100 phase=0\"]\n"
+                "C1 [label=\"C=0\"]\n"
+                "source -> C1\n"
+                "C1 -> source\n"
+                "}\n";
+
+            Circuit* circuit = createCircuitFromString(circuitStr);
+            circuit->validate();
+
+            Assert::IsFalse(circuit->calculateImpedances());
+
+
+            delete circuit;
+        }
         TEST_METHOD(Resistor100Ohm)
         {
             string circuitStr =
