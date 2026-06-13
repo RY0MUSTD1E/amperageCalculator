@@ -21,10 +21,51 @@ namespace CircuitTests
 {
     TEST_CLASS(CalculateTests)
     {
-    private:
-
-
     public:
+
+        TEST_METHOD(CalculateImpedancesError)
+        {
+            string circuitStr =
+                "digraph circuit {\n"
+                "SOURCE [label=\"SOURCE frequency=50 voltage=100 phase=0\"]\n"
+                "C1 [label=\"C=0\"]\n"
+                "SOURCE -> C1\n"
+                "C1 -> SOURCE\n"
+                "}\n";
+            Circuit* circuit = createCircuitFromString(circuitStr);
+            bool result = circuit->calculate();
+            Assert::IsFalse(result);
+
+            delete circuit;
+        }
+        TEST_METHOD(BuildBranchesError)
+        {
+            string circuitStr =
+                "digraph circuit {\n"
+                "R1 [label=\"R=10\"]\n"
+                "R2 [label=\"R=20\"]\n"
+                "R1 -> R2\n"
+                "R2 -> R1\n"
+                "}\n";
+            Circuit* circuit = createCircuitFromString(circuitStr);
+            bool result = circuit->calculate();
+            Assert::IsFalse(result);
+
+            delete circuit;
+        }
+
+        TEST_METHOD(CalculateCurrentsError)
+        {
+            string circuitStr =
+                "digraph circuit {\n"
+                "SOURCE [label=\"SOURCE frequency=50 voltage=100 phase=0\"]\n"
+                "}\n";
+            Circuit* circuit = createCircuitFromString(circuitStr);
+            bool result = circuit->calculate();
+            Assert::IsFalse(result);
+
+            delete circuit;
+        }
         TEST_METHOD(SeriesThreeResistors)
         {
             string circuitStr =
