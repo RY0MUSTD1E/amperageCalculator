@@ -15,6 +15,7 @@
 #include <vector>
 #include <queue>
 #include <map>
+#include <regex>
 #include <unordered_map>
 #include <unordered_set>
 #include <boost/graph/adjacency_list.hpp>
@@ -333,6 +334,85 @@ public:
      * \return Количество связей между узлами цепи.
      */
     size_t getEdgeCount() const;
+
+    /**
+    * \brief Очищает все внутренние структуры объекта Circuit перед повторным парсингом.
+    *
+    * Удаляет динамически выделенные узлы и ветви, очищает контейнеры и сбрасывает параметры источника.
+    *
+    */
+    void clearCircuitData();
+
+    /**
+     * \brief Загружает содержимое входного файла.
+     *
+     * Читает файл построчно, проверяет его доступность и наличие данных.
+     *
+     * \param[in] filename Путь к входному файлу.
+     * \param[out] lines Вектор строк файла.
+     * \return true, если файл успешно прочитан и содержит данные; false в противном случае.
+     */
+    bool loadFile(const string& filename, vector<string>& lines);
+
+    /**
+     * \brief Проверяет корректность структуры DOT-графа.
+     *
+     * Проверяет наличие ключевого слова "digraph",
+     * а также открывающей и закрывающей фигурных скобок.
+     *
+     * \param[in] lines Строки входного файла.
+     * \return true, если структура корректна; false в противном случае.
+     */
+    bool validateDotStructure(const vector<string>& lines);
+
+    /**
+     * \brief Основной парсер DOT-графа (узлы и связи).
+     *
+     * Обходит строки файла, выделяет вершины и рёбра графа, выполняет первичную валидацию и формирует промежуточные структуры.
+     *
+     * \param[in] lines Строки входного файла.
+     * \param[out] parsedNodes Вектор распарсенных параметров узлов.
+     * \return true, если парсинг успешен; false в противном случае.
+     */
+    bool parseGraph(const vector<string>& lines, vector<ParamsOfNode>& parsedNodes);
+
+    /**
+     * \brief Обрабатывает ребро графа вида A -> B.
+     *
+     * Проверяет корректность синтаксиса ребра и добавляет его в список связей.
+     *
+     * \param[in] s Строка с описанием ребра.
+     * \param[in,out] match Результат regex-разбора строки.
+     * \param[in] lineNum Номер строки в файле (для диагностики ошибок).
+     * \return true, если ребро корректно обработано; false в противном случае.
+     */
+    bool processEdge(const string& s, smatch& match, int lineNum);
+
+    /**
+     * \brief Обрабатывает узел графа с label-описанием.
+     *
+     * Проверяет корректность имени узла, уникальность,
+     * парсит label и формирует структуру ParamsOfNode.
+     *
+     * \param[in] s Строка с описанием узла.
+     * \param[in,out] match Результат regex-разбора строки.
+     * \param[in,out] parsedNames Множество уже обработанных имён узлов.
+     * \param[in,out] parsedNodes Вектор распарсенных узлов.
+     * \param[in] lineNum Номер строки для диагностики ошибок.
+     * \param[in] rawLine Исходная строка файла.
+     * \return true, если узел корректно обработан; false в противном случае.
+     */
+    bool processNode(const string& s, smatch& match, set<string>& parsedNames, vector<ParamsOfNode>& parsedNodes, int lineNum, const string& rawLine);
+
+    /**
+     * \brief Создаёт объекты CircuitNode из промежуточных данных.
+     *
+     * Преобразует ParamsOfNode в узлы CircuitNode,
+     * и заполняет внутренние структуры класса Circuit.
+     *
+     * \param[in] parsedNodes Вектор распарсенных параметров узлов.
+     */
+    void buildNodes(const vector<ParamsOfNode>& parsedNodes);
 
 private:
 

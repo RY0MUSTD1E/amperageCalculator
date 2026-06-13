@@ -64,42 +64,48 @@ string Circuit::trim(const string& s) {
     return s.substr(start, end - start + 1);
 }
 
-bool Circuit::parseFromFile(const string& filename) {
-
-    // Очистить все предыдущие данные
+void Circuit::clearCircuitData() {
+    // Очистить все узлы и ветви цепи
     for (auto* node : nodes) delete node;
     nodes.clear();
     for (auto* branch : branches) delete branch;
     branches.clear();
+
+    // Очистить связи и вспомогательные структуры
     edges.clear();
     nameToNode.clear();
     nameToIndex.clear();
     nodeDefinitions.clear();
+
+    // Сбросить параметры источника
     frequency = 0.0;
     sourceVoltage = 0.0;
     sourcePhase = 0.0;
-    error.clear();
 
-    // Открыть файл filename
+    error.clear();
+}
+
+bool Circuit::loadFile(const string& filename, vector<string>& lines) {
+    // Открыть файл для чтения
     ifstream file(filename);
 
-    // Если файл не существует или не удалось открыть
     if (!file.is_open()) {
         error.setError(ErrorType::InputFileNotExist, filename);
         return false;
     }
 
-    vector<string> lines;
     string line;
     bool hasContent = false;
 
+    // Построчно прочитать файл
     while (getline(file, line)) {
-        string trimmed = trim(line);
-        if (!trimmed.empty()) {
+        // Проверить, есть ли в строке непробельные символы
+        if (!trim(line).empty()) {
             hasContent = true;
         }
         lines.push_back(line);
     }
+
     file.close();
 
     // Если файл пуст
@@ -108,21 +114,23 @@ bool Circuit::parseFromFile(const string& filename) {
         return false;
     }
 
-    // Проверить наличие ключевого слова "digraph" в начале файла
+    return true;
+}
+
+bool Circuit::validateDotStructure(const vector<string>& lines) {
+    // Первая строка должна содержать ключевое слово "digraph"
     if (lines.empty() || trim(lines[0]).find("digraph") != 0) {
         error.setError(ErrorType::MissingDigraph);
         return false;
     }
 
-    // Проверить наличие открывающей и закрывающей фигурной скобки
-    bool hasOpenBrace = false, hasCloseBrace = false;
+    bool hasOpenBrace = false;
+    bool hasCloseBrace = false;
+
+    // Поиск открывающей и закрывающей фигурных скобок
     for (const auto& l : lines) {
-        if (l.find('{') != string::npos) {
-            hasOpenBrace = true;
-        }
-        if (l.find('}') != string::npos) {
-            hasCloseBrace = true;
-        }
+        if (l.find('{') != string::npos) hasOpenBrace = true;
+        if (l.find('}') != string::npos) hasCloseBrace = true;
     }
 
     // Если отсутствует открывающая скобка
@@ -130,135 +138,193 @@ bool Circuit::parseFromFile(const string& filename) {
         error.setError(ErrorType::MissingOpenBrace);
         return false;
     }
-    // Если отсутствует закрырывающая скобка
+
+    // Если отсутствует закрывающая скобка
     if (!hasCloseBrace) {
         error.setError(ErrorType::MissingCloseBrace);
         return false;
     }
 
-    // Выполнить парсинг DOT-формата
-    vector<ParamsOfNode> parsedNodes;
+    return true;
+}
 
-    set<string> parsedNames;
-    regex nodeRegex(R"(\s*(\w+)\s*\[label\s*=\s*\"([^\"]*)\"\s*\])");
-    regex edgeRegex(R"(\s*(\w+)\s*->\s*(\w+)\s*)");
-
-    int lineNum = 0;
-    bool insideGraph = false;
+bool Circuit::parseGraph(const vector<string>& lines, vector<ParamsOfNode>& parsedNodes) {
+    set<string> parsedNames;          // Множество уже встреченных имен узлов
+    smatch match;                     // Для хранения результатов regex поиска
+    bool insideGraph = false;         // Флаг нахождения внутри фигурных скобок
+    int lineNum = 0;                  // Текущий номер строки
 
     for (const auto& rawLine : lines) {
         lineNum++;
-        string s = trim(rawLine);
+        string s = trim(rawLine);     // Удалить пробелы по краям
 
+        // Пропустить пустые строки и комментарии
         if (s.empty() || s[0] == '#') {
             continue;
         }
 
+        // Обработка открывающей скобки
         if (s.find('{') != string::npos) {
             insideGraph = true;
-            if (s == "{" || s.find("digraph") != string::npos) {
-                continue;
-            }
+            continue;
         }
+
+        // Обработка закрывающей скобки
         if (s == "}") {
             insideGraph = false;
             continue;
         }
 
+        // Строки вне графа пропустить
         if (!insideGraph) {
             continue;
         }
 
-        smatch match;
-
-        // Обойти все рёбра графа
+        // Парсинг ребра (связь между узлами)
         if (s.find("->") != string::npos) {
-            if (regex_match(s, match, edgeRegex)) {
-                // Извлечь имена начальной и конечной вершин
-                string src = match[1].str();
-                string dst = match[2].str();
-                if (src.empty() || dst.empty()) {
-                    error.setError(ErrorType::InvalidConnectionSyntax, "", lineNum);
-                    return false;
-                }
-                if (src == dst) {
-                    error.setError(ErrorType::SelfConnection, src, lineNum);
-                    return false;
-                }
-                // Добавить пару (src, dst) в список edges
-                edges.emplace_back(src, dst);
-            }
-            else {
-                error.setError(ErrorType::InvalidConnectionSyntax, "", lineNum);
+            if (!processEdge(s, match, lineNum))
                 return false;
-            }
             continue;
         }
 
-        // Обойти все вершины графа
-        if (regex_match(s, match, nodeRegex)) {
-            // Извлечь имя вершины и атрибут label
-            string nodeName = match[1].str();
-            string labelContent = match[2].str();
-
-            if (!isValidName(nodeName)) {
-                error.setError(ErrorType::InvalidComponentName, nodeName, lineNum);
+        // Парсинг узла (компонент цепи с атрибутами)
+        if (s.find('[') != string::npos) {
+            if (!processNode(s, match, parsedNames, parsedNodes, lineNum, rawLine))
                 return false;
-            }
-
-            if (parsedNames.find(nodeName) != parsedNames.end()) {
-                error.setError(ErrorType::DuplicateComponent, nodeName, lineNum);
-                return false;
-            }
-
-            parsedNames.insert(nodeName);
-
-            if (labelContent.empty()) {
-                error.setError(ErrorType::EmptyLabel, nodeName, lineNum);
-                return false;
-            }
-
-            ParamsOfNode params;
-            params.name = nodeName;
-
-            // На основе label определить тип элемента (SOURCE, R, L, C) и извлечь числовые параметры
-            if (!parseLabel(labelContent, params, lineNum)) {
-                return false;
-            }
-
-            // Сохранить полученные данные во временные структуры ParamsOfNode
-            parsedNodes.push_back(params);
-            nodeDefinitions.push_back(rawLine);
             continue;
         }
 
+        // Нераспознанная конструкция
         if (!s.empty() && s != "{") {
             error.setError(ErrorType::InvalidCircuitTopology, "", lineNum);
             return false;
         }
     }
 
-    // На основе собранных данных заполнить поля объекта Circuit
+    return true;
+}
+
+bool Circuit::processEdge(const string& s, smatch& match, int lineNum) {
+    // Регулярное выражение для формата A -> B
+    regex edgeRegex(R"(\s*(\w+)\s*->\s*(\w+)\s*)");
+
+    if (!regex_match(s, match, edgeRegex)) {
+        error.setError(ErrorType::InvalidConnectionSyntax, "", lineNum);
+        return false;
+    }
+
+    string src = match[1];   // Имя узла-источника
+    string dst = match[2];   // Имя узла-приёмника
+
+    if (src.empty() || dst.empty()) {
+        error.setError(ErrorType::InvalidConnectionSyntax, "", lineNum);
+        return false;
+    }
+
+    // Запретить соединение элемента с самим собой
+    if (src == dst) {
+        error.setError(ErrorType::SelfConnection, src, lineNum);
+        return false;
+    }
+
+    edges.emplace_back(src, dst);
+    return true;
+}
+
+bool Circuit::processNode(const string& s, smatch& match, set<string>& parsedNames, vector<ParamsOfNode>& parsedNodes, int lineNum, const string& rawLine) {
+    // Регулярное выражение для формата: NodeName [label="..."]
+    regex nodeRegex(R"(\s*(\w+)\s*\[label\s*=\s*\"([^\"]*)\"\s*\])");
+
+    if (!regex_match(s, match, nodeRegex)) {
+        error.setError(ErrorType::InvalidCircuitTopology, "", lineNum);
+        return false;
+    }
+
+    string nodeName = match[1];   // Имя узла
+    string label = match[2];      // Содержимое label
+
+    // Проверить корректность имени узла
+    if (!isValidName(nodeName)) {
+        error.setError(ErrorType::InvalidComponentName, nodeName, lineNum);
+        return false;
+    }
+
+    // Проверить уникальность имени
+    if (parsedNames.count(nodeName)) {
+        error.setError(ErrorType::DuplicateComponent, nodeName, lineNum);
+        return false;
+    }
+
+    // Label не должен быть пустым
+    if (label.empty()) {
+        error.setError(ErrorType::EmptyLabel, nodeName, lineNum);
+        return false;
+    }
+
+    parsedNames.insert(nodeName);
+
+    ParamsOfNode params;
+    params.name = nodeName;
+
+    // Парсинг содержимого label
+    if (!parseLabel(label, params, lineNum)) {
+        return false;
+    }
+
+    parsedNodes.push_back(params);
+    nodeDefinitions.push_back(rawLine);   // Сохранить исходную строку для вывода
+
+    return true;
+}
+
+void Circuit::buildNodes(const vector<ParamsOfNode>& parsedNodes) {
+    // Пройти по всем распарсенным параметрам узлов
     for (const auto& params : parsedNodes) {
-        // Создать узлы CircuitNode из ParamsOfNode
-        CircuitNode* node = new CircuitNode(params.name, params.type, params.nominal);
+        // Создать новый узел цепи
+        CircuitNode* node =
+            new CircuitNode(params.name, params.type, params.nominal);
+
         node->setOriginalLabel(params.originalLabel);
 
+        // Если узел является источником то сохранить его параметры
         if (params.type == NodeType::Source) {
             node->setVoltage(params.voltage);
             node->setFrequency(params.frequency);
             node->setPhase(params.phase);
 
-            // Сохранить частоту, напряжение и фазу источника в соответствующие поля
             frequency = params.frequency;
             sourceVoltage = params.voltage;
             sourcePhase = params.phase;
         }
 
-        // Сохранить узлы в список nodes
+        // Добавить узел в общий список
         nodes.push_back(node);
         nameToNode[params.name] = node;
     }
+}
+
+bool Circuit::parseFromFile(const string& filename)
+{
+    // Очистить предыдущие данные
+    clearCircuitData();
+
+    vector<string> lines;
+    vector<ParamsOfNode> parsedNodes;
+
+    // Загрузить файл
+    if (!loadFile(filename, lines))
+        return false;
+
+    // Проверить структуру DOT
+    if (!validateDotStructure(lines))
+        return false;
+
+    // Парсинг графа (узлы и связи)
+    if (!parseGraph(lines, parsedNodes))
+        return false;
+
+    // Создать узлы цепи из распарсенных данных
+    buildNodes(parsedNodes);
 
     return true;
 }
