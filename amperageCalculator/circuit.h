@@ -179,10 +179,11 @@ public:
     /**
      * \brief Преобразует строку в число с плавающей точкой.
      * \param[in] s Исходная строка.
+     * \param[in] params Структура ParamsOfNode для получения имени коспонента при формировании сообщений об ошибках
      * \param[out] value Переменная для записи результата.
      * \return true, если строка содержит корректное число; false в противном случае.
      */
-    bool parseDouble(const string& s, double& value);
+    bool parseDouble(const string& s, double& value, ParamsOfNode& params);
 
     /**
      * \brief Проверяет корректность экспоненциального формата числа.

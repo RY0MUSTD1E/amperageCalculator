@@ -96,5 +96,4 @@ public:
     ErrorType type;                 ///< Тип ошибки
     std::string componentName;      ///< Имя связанного компонента
     int line;                       ///< Номер строки
-    std::string invalidValue;       ///< Некорректное значение
 };

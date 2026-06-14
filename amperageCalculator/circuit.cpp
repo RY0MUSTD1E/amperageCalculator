@@ -235,6 +235,11 @@ bool Circuit::processNode(const string& s, smatch& match, set<string>& parsedNam
     // Регулярное выражение для формата: NodeName [label="..."]
     regex nodeRegex(R"(\s*(\w+)\s*\[label\s*=\s*\"([^\"]*)\"\s*\])");
 
+    if (s.find('[') != string::npos && s.find("label") == string::npos) {
+        error.setError(ErrorType::MissingLabelAttribute, "", lineNum);
+        return false;
+    }
+
     if (!regex_match(s, match, nodeRegex)) {
         error.setError(ErrorType::InvalidCircuitTopology, "", lineNum);
         return false;
@@ -778,6 +783,9 @@ bool Circuit::parseLabel(const string& labelContent, ParamsOfNode& params, int l
     // Проверить, является ли элемент источником (SOURCE)
     if (upperContent.find("SOURCE") == 0) {
         if (!parseSourceLabel(labelContent, params)) {
+            if (error.hasError()) {
+                return false;
+            }
             error.setError(ErrorType::IncompleteSource, params.name, lineNum);
             return false;
         }
@@ -785,6 +793,9 @@ bool Circuit::parseLabel(const string& labelContent, ParamsOfNode& params, int l
     else {
         // Для пассивных элементов R, L, C отдельный парсер
         if (!parseElementLabel(labelContent, params)) {
+            if (error.hasError()) {
+                return false;
+            }
             size_t eqPos = labelContent.find('=');
             if (eqPos == string::npos) {
                 error.setError(ErrorType::MissingComponentValue, params.name, lineNum);
@@ -835,7 +846,7 @@ bool Circuit::parseSourceLabel(const string& content, ParamsOfNode& params) {
     if (!regex_search(content, match, freqRegex)) {
         return false;
     }
-    if (!parseDouble(match[1].str(), params.frequency)) {
+    if (!parseDouble(match[1].str(), params.frequency, params)) {
         return false;
     }
 
@@ -843,7 +854,7 @@ bool Circuit::parseSourceLabel(const string& content, ParamsOfNode& params) {
     if (!regex_search(content, match, voltRegex)) {
         return false;
     }
-    if (!parseDouble(match[1].str(), params.voltage)) {
+    if (!parseDouble(match[1].str(), params.voltage, params)) {
         return false;
     }
 
@@ -852,7 +863,7 @@ bool Circuit::parseSourceLabel(const string& content, ParamsOfNode& params) {
         return false;
     }
     double phase;
-    if (!parseDouble(match[1].str(), phase)) {
+    if (!parseDouble(match[1].str(), phase, params)) {
         return false;
     }
     params.phase = phase;
@@ -891,10 +902,10 @@ bool Circuit::parseElementLabel(const string& content, ParamsOfNode& params) {
     }
 
     // Преобразовать строковое значение в число с плавающей точкой
-    return parseDouble(valueStr, params.nominal);
+    return parseDouble(valueStr, params.nominal, params);
 }
 
-bool Circuit::parseDouble(const string& s, double& value) {
+bool Circuit::parseDouble(const string& s, double& value, ParamsOfNode& params) {
     if (s.empty()) {
         return false;
     }
@@ -904,6 +915,7 @@ bool Circuit::parseDouble(const string& s, double& value) {
 
     // Проверить экспоненциальный формат (не более 2 знаков после запятой в мантиссе)
     if (!validateExponentialFormat(str)) {
+        error.setError(ErrorType::InvalidExponentialFormat, params.name);
         return false;
     }
 

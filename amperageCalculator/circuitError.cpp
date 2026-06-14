@@ -29,7 +29,7 @@ std::string Error::getMessage() const {
     std::string prefix;
 
     if (line > 0) {
-        prefix = "Строка " + std::to_string(line) + ": ";
+        prefix = "Строка " + std::to_string(line) + ". ";
     }
 
     switch (type) {
@@ -40,49 +40,47 @@ std::string Error::getMessage() const {
     case ErrorType::FileEmpty:
         return "Неверно указан файл с входными данными. Файл пуст.";
     case ErrorType::MissingDigraph:
-        return "Ожидается 'digraph' в начале файла.";
+        return "Неверный формат входного файла. Ожидается 'digraph' в начале файла.";
     case ErrorType::MissingOpenBrace:
-        return "Отсутствует открывающая фигурная скобка '{'.";
+        return "Неверный формат входного файла. Отсутствует открывающая фигурная скобка '{'.";
     case ErrorType::MissingCloseBrace:
-        return "Отсутствует закрывающая фигурная скобка '}'.";
+        return "Неверный формат входного файла. Отсутствует закрывающая фигурная скобка '}'.";
     case ErrorType::InvalidConnectionSyntax:
-        return prefix + "не соответствует формату записи связи.";
+        return prefix + "Не соответствует формату записи связи.";
     case ErrorType::InvalidComponentName:
-        return prefix + "некорректное имя компонента \"" + componentName + "\". Имя должно содержать только буквы и цифры и быть не более 7 символов.";
+        return prefix + "Некорректное имя компонента \"" + componentName + "\". Имя должно содержать только буквы и цифры и быть не более 7 символов.";
     case ErrorType::DuplicateComponent:
-        return prefix + "компонент \"" + componentName + "\" уже был определен ранее.";
+        return prefix + "Компонент с таким именем уже существует. Компонент \"" + componentName + "\" уже был определен ранее.";
     case ErrorType::MissingLabelAttribute:
-        return prefix + "отсутствует атрибут label у компонента \"" + componentName + "\".";
+        return prefix + "Отсутствует описание компонента. У компонента отсутствует атрибут label.";
     case ErrorType::EmptyLabel:
-        return prefix + "пустой label у компонента \"" + componentName + "\".";
+        return prefix + "Пустое описание компонента. Пустой label у компонента \"" + componentName + "\".";
     case ErrorType::UnknownComponentType:
-        return prefix + "неизвестный тип компонента. Ожидается SOURCE, R, L или C.";
+        return prefix + "Неизвестный тип компонента. Ожидается SOURCE, R, L или C.";
     case ErrorType::IncompleteSource:
-        return prefix + "неполное описание источника. Ожидается: SOURCE frequency=<значение> voltage=<значение> phase=<значение>.";
+        return prefix + "Неполное описание источника. Ожидается: SOURCE frequency=<значение> voltage=<значение> phase=<значение>.";
     case ErrorType::MissingComponentValue:
-        return prefix + "неполное описание компонента \"" + componentName + "\".";
+        return prefix + "Неполное описание компонента \"" + componentName + "\".";
     case ErrorType::InvalidNumberFormat:
-        return prefix + "значение не является корректным числом.";
+        return prefix + "Параметр компонента \"" + componentName + "\" не является корректным числом.";
     case ErrorType::PhaseOutOfRange:
-        return "Фаза должна находиться в диапазоне [0, 360].";
+        return "Параметр компонента \"" + componentName + "\" вне допустимого диапазона. Фаза должна находиться в диапазоне [0, 360].";
     case ErrorType::InvalidExponentialFormat:
-        return prefix + "некорректная экспоненциальная запись.";
+        return "Параметр компонента \"" + componentName + "\" в экспоненциальной форме записан некорректно.";
     case ErrorType::UndefinedComponent:
-        return "Компонент \"" + componentName + "\" используется в соединении, но не был описан.";
+        return "Неопределенный компонент. Компонент \"" + componentName + "\" используется в соединении, но не был описан.";
     case ErrorType::CircuitNotClosed:
         return "Цепь не замкнута. Необходимо, чтобы существовал путь от источника через все элементы обратно к источнику, следуя по направлению стрелок.";
     case ErrorType::IsolatedComponent:
-        return "Обнаружен изолированный компонент \"" + componentName + "\".";
+        return "Нарушение замкнутости цепи. Обнаружен изолированный компонент \"" + componentName + "\".";
     case ErrorType::DuplicateConnection:
-        return "Дублирующееся соединение.";
+        return "В цепи не может содержаться дублирующееся соединение.";
     case ErrorType::SelfConnection:
-        return "Cоединение компонента \"" + componentName + "\" с самим собой недопустимо.";
+        return prefix + "Некорректное соединение. Cоединение компонента \"" + componentName + "\" с самим собой недопустимо.";
     case ErrorType::ValueOutOfRange:
-        return "Значение находится вне допустимого диапазона.";
+        return "Значение параметра компонента \"" + componentName + "\" находится вне допустимого диапазона.";
     case ErrorType::NoConnections:
         return "Цепь не содержит ни одного соединения между компонентами.";
-    case ErrorType::NoComponents:
-        return "Цепь не содержит ни одного компонента.";
     case ErrorType::MissingSource:
         return "Отсутствует источник тока. Цепь должна содержать ровно один элемент типа SOURCE.";
     case ErrorType::MultipleSources:
